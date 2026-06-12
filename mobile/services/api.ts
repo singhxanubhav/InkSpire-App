@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
 import { Platform } from 'react-native';
+import { useAuthStore } from '../store/authStore';
 
 // For Android emulator to access local server, we use 10.0.2.2
 // For iOS simulator, localhost works
@@ -43,22 +44,32 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       try {
-        // Here you would implement your refresh token logic
-        // Example: const response = await axios.post(`${BASE_URL}/auth/refresh`);
-        // await storage.setItem('accessToken', response.data.token);
-        // originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
-        // return api(originalRequest);
+        const refreshToken = await storage.getItem('refreshToken');
+        if (!refreshToken) {
+          useAuthStore.getState().logout();
+          return Promise.reject(error);
+        }
+
+        const response = await axios.post(`${BASE_URL}/auth/refresh-token`, { refreshToken });
         
-        // If refresh fails, you would logout the user
-        // useAuthStore.getState().logout();
+        if (response.data.success) {
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+          
+          await useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
+          
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        }
       } catch (refreshError) {
+        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }
     
     // Handle Network Errors
-    if (!error.response) {
-      console.error('Network Error: Please check your internet connection.');
+    if (!error.response && error.message === 'Network Error') {
+      console.error('No internet connection');
+      error.message = 'No internet connection';
     }
     
     return Promise.reject(error);
