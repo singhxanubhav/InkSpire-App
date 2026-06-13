@@ -43,7 +43,6 @@ export function Toast({ visible, message, type = 'info', onHide, duration = 3000
     }
   }, [visible, duration, insets.top]);
 
-  if (!visible) return null;
 
   const getBackgroundColor = () => {
     switch (type) {
@@ -75,6 +74,8 @@ export function Toast({ visible, message, type = 'info', onHide, duration = 3000
       opacity: opacity.value,
     };
   });
+
+  if (!visible) return null;
 
   return (
     <Animated.View

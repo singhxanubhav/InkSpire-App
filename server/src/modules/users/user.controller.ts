@@ -42,7 +42,7 @@ export class UserController {
   static async getUserProfile(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const profile = await UserService.getUserProfile(id);
+      const profile = await UserService.getUserProfile(id as string);
       res.json(profile);
     } catch (error: any) {
       res.status(404).json({ error: error.message });

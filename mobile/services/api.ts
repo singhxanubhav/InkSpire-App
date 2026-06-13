@@ -6,9 +6,7 @@ import { useAuthStore } from '../store/authStore';
 // For Android emulator to access local server, we use 10.0.2.2
 // For iOS simulator, localhost works
 const BASE_URL = __DEV__
-  ? Platform.OS === 'android'
-    ? 'http://10.0.2.2:8000/api'
-    : 'http://localhost:8000/api'
+  ? 'http://10.165.153.125:8000/api'
   : 'https://api.inkspire.com/api'; // Production URL
 
 export const api = axios.create({

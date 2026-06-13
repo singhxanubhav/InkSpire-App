@@ -7,6 +7,7 @@ interface ButtonProps extends TouchableOpacityProps {
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   className?: string;
+  textStyle?: any;
 }
 
 export const Button: React.FC<ButtonProps> = ({

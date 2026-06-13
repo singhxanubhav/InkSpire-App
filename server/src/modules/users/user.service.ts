@@ -95,13 +95,13 @@ export class UserService {
     const potentialMatches = await prisma.user.findMany(queryArgs);
 
     // Calculate score: +1 for each shared genre
-    const scoredMatches = potentialMatches.map(user => {
-      const sharedGenres = user.genres.filter(g => currentUser.genres.includes(g)).length;
+    const scoredMatches = potentialMatches.map((user: any) => {
+      const sharedGenres = user.genres.filter((g: any) => currentUser.genres.includes(g)).length;
       return { ...user, matchScore: sharedGenres };
     });
 
     // Sort by match score descending
-    scoredMatches.sort((a, b) => b.matchScore - a.matchScore);
+    scoredMatches.sort((a: any, b: any) => b.matchScore - a.matchScore);
 
     const nextCursor = scoredMatches.length === limit ? scoredMatches[limit - 1].id : undefined;
 

@@ -1,25 +1,13 @@
 import http from 'http';
-import { Server } from 'socket.io';
+import { initializeSocket } from './config/socket';
 import app from './app';
 import { env } from './config/env';
 import { prisma } from './config/database';
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: env.CLIENT_URL,
-    credentials: true,
-  },
-});
-
-io.on('connection', (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
-
-  socket.on('disconnect', () => {
-    console.log(`Socket disconnected: ${socket.id}`);
-  });
-});
+// Initialize Socket.io
+initializeSocket(server);
 
 const startServer = async () => {
   try {

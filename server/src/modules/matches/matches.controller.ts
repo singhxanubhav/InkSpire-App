@@ -44,7 +44,7 @@ export class MatchesController {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
-      const match = await MatchesService.acceptRequest(id, userId);
+      const match = await MatchesService.acceptRequest(id as string, userId);
       res.json(match);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -55,7 +55,7 @@ export class MatchesController {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
-      const match = await MatchesService.declineRequest(id, userId);
+      const match = await MatchesService.declineRequest(id as string, userId);
       res.json(match);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -66,7 +66,7 @@ export class MatchesController {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
-      const match = await MatchesService.unmatch(id, userId);
+      const match = await MatchesService.unmatch(id as string, userId);
       res.json(match);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

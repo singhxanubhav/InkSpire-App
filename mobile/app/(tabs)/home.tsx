@@ -10,19 +10,26 @@ export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const router = useRouter();
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [activeMatches, setActiveMatches] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchPendingRequests = async () => {
+    const fetchMatches = async () => {
       try {
-        const response = await api.get('/matches/requests');
-        if (response.data?.incoming) {
-          setPendingRequests(response.data.incoming.length);
+        const [reqs, matchesRes] = await Promise.all([
+          api.get('/matches/requests'),
+          api.get('/matches')
+        ]);
+        if (reqs.data?.incoming) {
+          setPendingRequests(reqs.data.incoming.length);
+        }
+        if (matchesRes.data) {
+          setActiveMatches(matchesRes.data);
         }
       } catch (e) {
         // silently fail
       }
     };
-    fetchPendingRequests();
+    fetchMatches();
   }, []);
 
   return (
@@ -56,6 +63,32 @@ export default function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#4f46e5" />
           </TouchableOpacity>
+        )}
+
+        {/* Active Matches */}
+        {activeMatches.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-lg font-bold text-gray-900 mb-4">Your Co-Writers</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {activeMatches.map((match) => (
+                <TouchableOpacity 
+                  key={match.matchId}
+                  className="bg-white border border-gray-200 rounded-2xl p-4 mr-4 items-center w-32 shadow-sm"
+                  onPress={() => router.push(`/match/${match.matchId}`)}
+                >
+                  <View className="w-16 h-16 bg-indigo-100 rounded-full mb-3 items-center justify-center">
+                    <Text className="text-xl font-bold text-indigo-700">
+                      {match.partner?.displayName?.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text className="font-bold text-gray-900 text-center" numberOfLines={1}>
+                    {match.partner?.displayName}
+                  </Text>
+                  <Text className="text-xs text-indigo-600 mt-1">Workspace</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
         {/* Daily Goal Card */}

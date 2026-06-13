@@ -24,7 +24,7 @@ export class MatchesService {
       data: {
         requesterId,
         receiveeId,
-        status: 'PENDING'
+        status: 'ACCEPTED'
       }
     });
 
