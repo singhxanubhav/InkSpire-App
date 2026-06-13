@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import authRouter from './modules/auth/auth.routes';
+import userRouter from './modules/users/user.routes';
 
 const app = express();
 
@@ -45,6 +46,7 @@ apiRouter.get('/health', (req, res) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', userRouter);
 
 app.use('/api', apiRouter);
 

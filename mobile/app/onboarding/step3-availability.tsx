@@ -49,9 +49,7 @@ export default function Step3AvailabilityScreen() {
     };
 
     try {
-      // Assuming a generic update user endpoint. The user might need this created, 
-      // but for Phase 0/1 it's standard.
-      // await api.patch('/users/me', payload);
+      await api.patch('/users/me', payload);
       
       // Update local store
       updateUser(payload);
