@@ -180,6 +180,7 @@ export default function PromptsScreen() {
           <TouchableOpacity 
             style={[styles.upvoteBtn, item.hasUpvoted && styles.upvotedBtn]}
             onPress={() => handleUpvote(item.id, item.hasUpvoted, item._count?.upvotes || 0)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name={item.hasUpvoted ? "arrow-up-circle" : "arrow-up-circle-outline"} size={20} color={item.hasUpvoted ? "#2563eb" : "#6b7280"} />
             <Text style={[styles.upvoteText, item.hasUpvoted && styles.upvotedText]}>{item._count?.upvotes || 0}</Text>
@@ -188,6 +189,7 @@ export default function PromptsScreen() {
           <TouchableOpacity 
             style={styles.respondBtn}
             onPress={() => handleWriteResponse(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="create-outline" size={18} color="#4b5563" />
             <Text style={styles.respondText}>Write</Text>
@@ -199,6 +201,7 @@ export default function PromptsScreen() {
               setSelectedPrompt(item);
               setShowResponsesList(true);
             }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="people-outline" size={18} color="#4b5563" />
             <Text style={styles.respondText}>{item._count?.submissions || 0}</Text>
@@ -296,22 +299,30 @@ export default function PromptsScreen() {
         }
       />
 
-      <PromptResponseModal 
-        isVisible={showResponseModal}
-        prompt={selectedPrompt}
-        onClose={() => setShowResponseModal(false)}
-      />
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {showResponseModal && (
+          <PromptResponseModal 
+            isVisible={showResponseModal}
+            prompt={selectedPrompt}
+            onClose={() => setShowResponseModal(false)}
+          />
+        )}
 
-      <SuggestPromptModal
-        isVisible={showSuggestModal}
-        onClose={() => setShowSuggestModal(false)}
-      />
+        {showSuggestModal && (
+          <SuggestPromptModal
+            isVisible={showSuggestModal}
+            onClose={() => setShowSuggestModal(false)}
+          />
+        )}
 
-      <ResponsesListModal
-        isVisible={showResponsesList}
-        prompt={selectedPrompt}
-        onClose={() => setShowResponsesList(false)}
-      />
+        {showResponsesList && (
+          <ResponsesListModal
+            isVisible={showResponsesList}
+            prompt={selectedPrompt}
+            onClose={() => setShowResponsesList(false)}
+          />
+        )}
+      </View>
 
     </SafeAreaView>
   );

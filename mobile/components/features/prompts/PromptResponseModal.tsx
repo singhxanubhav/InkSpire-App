@@ -32,14 +32,10 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
     }
   }, [isVisible]);
 
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const isEnabled = wordCount >= 50;
+  const isEnabled = content.trim().length > 0;
 
   const handlePublish = async () => {
-    if (!isEnabled) {
-      setToast({ visible: true, message: `Please write at least 50 words. You have ${wordCount}.`, type: 'error' });
-      return;
-    }
+    if (!isEnabled) return;
 
     setIsPublishing(true);
     Keyboard.dismiss();
@@ -83,8 +79,17 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
       keyboardBlurBehavior="restore"
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Write Response</Text>
-        <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+        <View style={styles.headerLeft}>
+          <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+          <Text style={styles.title}>Write Response</Text>
+        </View>
+        <Button 
+          title="Publish" 
+          onPress={handlePublish} 
+          disabled={!isEnabled || isPublishing}
+          loading={isPublishing}
+          style={styles.publishBtn}
+        />
       </View>
 
       <BottomSheetScrollView contentContainerStyle={styles.content}>
@@ -105,23 +110,6 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
         />
       </BottomSheetScrollView>
 
-      <View style={styles.footer}>
-        <View style={styles.footerInfo}>
-          <Text style={[styles.wordCount, wordCount >= 50 && styles.wordCountValid]}>
-            {wordCount} {wordCount === 1 ? 'word' : 'words'}
-          </Text>
-          {wordCount < 50 && (
-            <Text style={styles.wordCountReq}>(50 min)</Text>
-          )}
-        </View>
-        <Button 
-          title="Publish" 
-          onPress={handlePublish} 
-          disabled={!isEnabled || isPublishing}
-          loading={isPublishing}
-          style={styles.publishBtn}
-        />
-      </View>
 
       <Toast 
         visible={toast.visible} 
@@ -138,19 +126,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
+  publishBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 36,
+  },
   content: {
     padding: 20,
-    paddingBottom: 100, // Make room for footer
+    paddingBottom: 40,
   },
   promptReference: {
     backgroundColor: '#f8fafc',
@@ -178,39 +176,5 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: '#1e293b',
     minHeight: 300,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  footerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  wordCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  wordCountValid: {
-    color: '#10b981',
-  },
-  wordCountReq: {
-    fontSize: 12,
-    color: '#ef4444',
-  },
-  publishBtn: {
-    paddingHorizontal: 24,
   }
 });

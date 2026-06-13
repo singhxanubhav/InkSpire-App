@@ -155,11 +155,7 @@ export class PromptsService {
   }
 
   static async submitResponse(promptId: string, userId: string, content: string) {
-    const wordCount = content.trim().split(/\s+/).length;
-    
-    if (wordCount < 50) {
-      throw new Error('Response must be at least 50 words.');
-    }
+    const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
     return prisma.promptSubmission.create({
       data: {
