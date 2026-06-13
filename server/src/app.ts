@@ -4,6 +4,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
+import authRouter from './modules/auth/auth.routes';
+import userRouter from './modules/users/user.routes';
 
 const app = express();
 
@@ -42,6 +44,9 @@ const apiRouter = express.Router();
 apiRouter.get('/health', (req, res) => {
   res.json({ success: true, message: 'Server is healthy' });
 });
+
+apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', userRouter);
 
 app.use('/api', apiRouter);
 
