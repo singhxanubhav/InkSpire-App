@@ -13,7 +13,7 @@ export const useIdeaSync = (matchId: string) => {
 
       socket.on('idea:created', (idea) => {
         // Optimistically update React Query cache for ideas
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return { pages: [[idea]], pageParams: [] };
           // Insert at the beginning of the first page
           const newPages = [...oldData.pages];
@@ -25,7 +25,7 @@ export const useIdeaSync = (matchId: string) => {
       });
 
       socket.on('idea:updated', (updatedIdea) => {
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -37,7 +37,7 @@ export const useIdeaSync = (matchId: string) => {
       });
 
       socket.on('idea:deleted', (ideaId) => {
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -49,7 +49,7 @@ export const useIdeaSync = (matchId: string) => {
       });
 
       socket.on('idea:pinned', ({ ideaId, isPinned }) => {
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -61,7 +61,7 @@ export const useIdeaSync = (matchId: string) => {
       });
 
       socket.on('reply:created', ({ ideaId, reply }) => {
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -82,7 +82,7 @@ export const useIdeaSync = (matchId: string) => {
       });
 
       socket.on('reply:deleted', ({ ideaId, replyId }) => {
-        queryClient.setQueryData(['ideas', matchId], (oldData: any) => {
+        queryClient.setQueriesData({ queryKey: ['ideas', matchId] }, (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,

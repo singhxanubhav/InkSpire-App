@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { api } from '../../../services/api';
 import ReplyThread from './ReplyThread';
+import { ActionModal, ActionOption } from '../../ui/ActionModal';
 
 interface IdeaCardProps {
   idea: any;
@@ -23,6 +24,8 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 export default function IdeaCard({ idea, matchId, isOwn, partnerName }: IdeaCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const colors = TYPE_COLORS[idea.type] || TYPE_COLORS.OTHER;
 
@@ -42,43 +45,33 @@ export default function IdeaCard({ idea, matchId, isOwn, partnerName }: IdeaCard
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+    setShowOptions(true);
+  };
 
-    const options: import('react-native').AlertButton[] = [
-      { text: idea.isPinned ? 'Unpin' : 'Pin', onPress: handleTogglePin },
-      { text: 'Cancel', style: 'cancel' }
-    ];
-
-    if (isOwn) {
-      options.splice(1, 0, {
-        text: 'Delete',
-        style: 'destructive' as const,
-        onPress: () => {
-          Alert.alert('Delete Idea', 'Are you sure?', [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Delete', 
-              style: 'destructive', 
-              onPress: async () => {
-                try {
-                  await api.delete(`/matches/${matchId}/ideas/${idea.id}`);
-                } catch (e) {
-                  console.error(e);
-                }
-              }
-            }
-          ]);
-        }
-      });
-    }
-
-    if (Platform.OS === 'web') {
-      if (window.confirm('Toggle Pin?')) {
-        handleTogglePin();
-      }
-    } else {
-      Alert.alert('Options', '', options);
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/matches/${matchId}/ideas/${idea.id}`);
+    } catch (e) {
+      console.error(e);
     }
   };
+
+  const options: ActionOption[] = [
+    { 
+      label: idea.isPinned ? 'Unpin Idea' : 'Pin Idea', 
+      icon: idea.isPinned ? 'pin-outline' : 'pin', 
+      onPress: handleTogglePin 
+    }
+  ];
+
+  if (isOwn) {
+    options.push({ 
+      label: 'Delete Idea', 
+      icon: 'trash-outline', 
+      destructive: true, 
+      onPress: () => setShowDeleteConfirm(true) 
+    });
+  }
 
   return (
     <View style={styles.container}>
@@ -165,6 +158,21 @@ export default function IdeaCard({ idea, matchId, isOwn, partnerName }: IdeaCard
           <ReplyThread ideaId={idea.id} matchId={matchId} replies={idea.replies} />
         </View>
       )}
+
+      <ActionModal 
+        visible={showOptions} 
+        onClose={() => setShowOptions(false)} 
+        options={options} 
+      />
+
+      <ActionModal
+        visible={showDeleteConfirm}
+        title="Are you sure you want to delete this idea?"
+        onClose={() => setShowDeleteConfirm(false)}
+        options={[
+          { label: 'Delete Idea', icon: 'trash-outline', destructive: true, onPress: handleDelete }
+        ]}
+      />
     </View>
   );
 }

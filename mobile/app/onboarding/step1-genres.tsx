@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/ui/Button';
+import { ActionModal } from '../../components/ui/ActionModal';
+import { Toast } from '../../components/ui/Toast';
 
 const GENRES = [
   { id: 'FANTASY', label: 'Fantasy' },
@@ -22,6 +24,8 @@ const GENRES = [
 export default function Step1GenresScreen() {
   const router = useRouter();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
 
   const toggleGenre = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -32,20 +36,14 @@ export default function Step1GenresScreen() {
         setSelectedGenres([...selectedGenres, id]);
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setToast({ visible: true, message: 'You can select up to 5 genres.', type: 'info' });
       }
     }
   };
 
   const handleBack = () => {
     if (selectedGenres.length > 0) {
-      Alert.alert(
-        'Discard changes?',
-        'You have unsaved changes. Are you sure you want to go back?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-        ]
-      );
+      setShowDiscardConfirm(true);
     } else {
       router.back();
     }
@@ -120,6 +118,22 @@ export default function Step1GenresScreen() {
           disabled={selectedGenres.length === 0}
         />
       </View>
+
+      <ActionModal
+        visible={showDiscardConfirm}
+        title="You have unsaved changes. Are you sure you want to go back?"
+        onClose={() => setShowDiscardConfirm(false)}
+        options={[
+          { label: 'Discard Changes', icon: 'trash-outline', destructive: true, onPress: () => router.back() }
+        ]}
+      />
+
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
+      />
     </View>
   );
 }

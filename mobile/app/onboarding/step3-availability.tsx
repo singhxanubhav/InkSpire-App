@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, PanResponder, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, PanResponder, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/ui/Button';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { ActionModal } from '../../components/ui/ActionModal';
 
 const AVAILABILITY = [
   { id: 'DAILY', label: 'Daily' },
@@ -23,16 +24,10 @@ export default function Step3AvailabilityScreen() {
   const [wordCount, setWordCount] = useState(500);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const handleBack = () => {
-    Alert.alert(
-      'Discard changes?',
-      'You have unsaved changes. Are you sure you want to go back?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-      ]
-    );
+    setShowDiscardConfirm(true);
   };
 
   const handleFinish = async () => {
@@ -193,6 +188,15 @@ export default function Step3AvailabilityScreen() {
           loading={isLoading}
         />
       </View>
+
+      <ActionModal
+        visible={showDiscardConfirm}
+        title="You have unsaved changes. Are you sure you want to go back?"
+        onClose={() => setShowDiscardConfirm(false)}
+        options={[
+          { label: 'Discard Changes', icon: 'trash-outline', destructive: true, onPress: () => router.back() }
+        ]}
+      />
     </View>
   );
 }

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../ui/Button';
+import { ActionModal } from '../../ui/ActionModal';
+import { Toast } from '../../ui/Toast';
 
 interface EditProfileModalProps {
   isVisible: boolean;
@@ -29,6 +31,8 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
   const [bio, setBio] = useState(initialData.bio || '');
   const [genres, setGenres] = useState<string[]>(initialData.genres || []);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
 
   const hasUnsavedChanges = useMemo(() => {
     return displayName !== initialData.displayName || 
@@ -49,14 +53,7 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
 
   const handleClose = useCallback(() => {
     if (hasUnsavedChanges) {
-      Alert.alert(
-        'Discard changes?',
-        'You have unsaved changes. Are you sure you want to discard them?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: onClose }
-        ]
-      );
+      setShowDiscardConfirm(true);
     } else {
       onClose();
     }
@@ -66,7 +63,7 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
     setGenres(prev => {
       if (prev.includes(genre)) return prev.filter(g => g !== genre);
       if (prev.length >= 5) {
-        Alert.alert('Limit Reached', 'You can select up to 5 genres.');
+        setToast({ visible: true, message: 'You can select up to 5 genres.', type: 'info' });
         return prev;
       }
       return [...prev, genre];
@@ -75,7 +72,7 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
 
   const handleSave = async () => {
     if (!displayName.trim()) {
-      Alert.alert('Validation Error', 'Display name is required.');
+      setToast({ visible: true, message: 'Display name is required.', type: 'error' });
       return;
     }
     
@@ -84,7 +81,7 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
       await onSave({ displayName, bio, genres });
       onClose();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      setToast({ visible: true, message: 'Failed to save profile. Please try again.', type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -170,6 +167,22 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
           style={styles.saveButton}
         />
       </BottomSheetScrollView>
+
+      <ActionModal
+        visible={showDiscardConfirm}
+        title="You have unsaved changes. Are you sure you want to discard them?"
+        onClose={() => setShowDiscardConfirm(false)}
+        options={[
+          { label: 'Discard Changes', icon: 'trash-outline', destructive: true, onPress: onClose }
+        ]}
+      />
+
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
+      />
     </BottomSheet>
   );
 }

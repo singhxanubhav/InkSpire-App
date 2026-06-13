@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { api } from '../../../services/api';
 import { Button } from '../../ui/Button';
+import { ActionModal } from '../../ui/ActionModal';
+import { Toast } from '../../ui/Toast';
 
 interface PartnerInfoProps {
   matchId: string;
@@ -13,34 +15,24 @@ interface PartnerInfoProps {
 export default function PartnerInfo({ matchId, partner }: PartnerInfoProps) {
   const router = useRouter();
   const [isUnmatching, setIsUnmatching] = useState(false);
+  const [showUnmatchConfirm, setShowUnmatchConfirm] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
 
   if (!partner) return null;
 
   const displayAvatar = partner.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${partner.id}`;
 
-  const handleUnmatch = () => {
-    Alert.alert(
-      'Unmatch',
-      `Are you sure you want to unmatch with ${partner.displayName}? This action cannot be undone and will delete this workspace.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unmatch',
-          style: 'destructive',
-          onPress: async () => {
-            setIsUnmatching(true);
-            try {
-              await api.post(`/matches/${matchId}/unmatch`);
-              router.replace('/(tabs)/home');
-            } catch (err) {
-              console.error('Failed to unmatch', err);
-              Alert.alert('Error', 'Failed to unmatch. Please try again.');
-              setIsUnmatching(false);
-            }
-          }
-        }
-      ]
-    );
+  const handleUnmatch = async () => {
+    setIsUnmatching(true);
+    setShowUnmatchConfirm(false);
+    try {
+      await api.post(`/matches/${matchId}/unmatch`);
+      router.replace('/(tabs)/home');
+    } catch (err) {
+      console.error('Failed to unmatch', err);
+      setToast({ visible: true, message: 'Failed to unmatch. Please try again.', type: 'error' });
+      setIsUnmatching(false);
+    }
   };
 
   return (
@@ -83,11 +75,27 @@ export default function PartnerInfo({ matchId, partner }: PartnerInfoProps) {
         <Button 
           title="Unmatch" 
           variant="danger" 
-          onPress={handleUnmatch} 
+          onPress={() => setShowUnmatchConfirm(true)} 
           loading={isUnmatching}
           style={styles.unmatchButton}
         />
       </View>
+
+      <ActionModal
+        visible={showUnmatchConfirm}
+        title={`Unmatch with ${partner.displayName}? This action cannot be undone.`}
+        onClose={() => setShowUnmatchConfirm(false)}
+        options={[
+          { label: 'Unmatch User', icon: 'person-remove-outline', destructive: true, onPress: handleUnmatch }
+        ]}
+      />
+
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
+      />
     </ScrollView>
   );
 }

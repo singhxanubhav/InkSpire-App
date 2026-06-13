@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
+import { ActionModal } from '../../ui/ActionModal';
 
 interface ReplyThreadProps {
   ideaId: string;
@@ -13,6 +14,7 @@ interface ReplyThreadProps {
 export default function ReplyThread({ ideaId, matchId, replies = [] }: ReplyThreadProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const user = useAuthStore(state => state.user);
 
   const handleSend = async () => {
@@ -31,21 +33,14 @@ export default function ReplyThread({ ideaId, matchId, replies = [] }: ReplyThre
     }
   };
 
-  const handleDelete = (replyId: string) => {
-    Alert.alert('Delete Reply', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Delete', 
-        style: 'destructive', 
-        onPress: async () => {
-          try {
-            await api.delete(`/matches/${matchId}/ideas/${ideaId}/replies/${replyId}`);
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      }
-    ]);
+  const handleDelete = async () => {
+    if (!showDeleteConfirm) return;
+    try {
+      await api.delete(`/matches/${matchId}/ideas/${ideaId}/replies/${showDeleteConfirm}`);
+      setShowDeleteConfirm(null);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -61,7 +56,7 @@ export default function ReplyThread({ ideaId, matchId, replies = [] }: ReplyThre
                   {new Date(reply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
                 {isOwn && (
-                  <TouchableOpacity onPress={() => handleDelete(reply.id)} hitSlop={10}>
+                  <TouchableOpacity onPress={() => setShowDeleteConfirm(reply.id)} hitSlop={10}>
                     <Ionicons name="trash-outline" size={14} color="#ef4444" />
                   </TouchableOpacity>
                 )}
@@ -88,6 +83,15 @@ export default function ReplyThread({ ideaId, matchId, replies = [] }: ReplyThre
           <Ionicons name="send" size={16} color="#ffffff" />
         </TouchableOpacity>
       </View>
+
+      <ActionModal
+        visible={!!showDeleteConfirm}
+        title="Delete this reply?"
+        onClose={() => setShowDeleteConfirm(null)}
+        options={[
+          { label: 'Delete', icon: 'trash-outline', destructive: true, onPress: handleDelete }
+        ]}
+      />
     </View>
   );
 }

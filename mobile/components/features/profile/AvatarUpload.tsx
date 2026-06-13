@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { ActionModal } from '../../ui/ActionModal';
+import { Toast } from '../../ui/Toast';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -11,23 +13,17 @@ interface AvatarUploadProps {
 export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [localUri, setLocalUri] = useState<string | null>(null);
+  const [showOptions, setShowOptions] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
 
   const handlePress = () => {
-    Alert.alert(
-      'Profile Photo',
-      'Choose an option',
-      [
-        { text: 'Camera', onPress: openCamera },
-        { text: 'Gallery', onPress: openGallery },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    setShowOptions(true);
   };
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
+      setToast({ visible: true, message: 'Sorry, we need camera permissions to make this work!', type: 'error' });
       return;
     }
 
@@ -45,7 +41,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUpload
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
+      setToast({ visible: true, message: 'Sorry, we need camera roll permissions to make this work!', type: 'error' });
       return;
     }
 
@@ -91,7 +87,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUpload
       const data = await response.json();
       onUploadSuccess(data.avatar || uri); // fallback to uri if backend mocks it
     } catch (error) {
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+      setToast({ visible: true, message: 'Failed to upload image. Please try again.', type: 'error' });
       setLocalUri(null); // Revert optimistic UI
     } finally {
       setIsUploading(false);
@@ -113,6 +109,23 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUpload
           <Ionicons name="camera" size={16} color="white" />
         </View>
       </TouchableOpacity>
+
+      <ActionModal
+        visible={showOptions}
+        title="Profile Photo"
+        onClose={() => setShowOptions(false)}
+        options={[
+          { label: 'Take Photo', icon: 'camera-outline', onPress: openCamera },
+          { label: 'Choose from Gallery', icon: 'image-outline', onPress: openGallery }
+        ]}
+      />
+
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
+      />
     </View>
   );
 }
