@@ -5,13 +5,13 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { KeyboardAvoidingWrapper } from '../../components/ui/KeyboardAvoidingWrapper';
 import { api } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 export default function RegisterScreen() {
   const router = useRouter();
   
   const [formData, setFormData] = useState({
     displayName: '',
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -20,8 +20,7 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const login = useAuthStore((state) => state.login);
 
   // Password strength logic
   const getPasswordStrength = (pass: string) => {
@@ -39,30 +38,6 @@ export default function RegisterScreen() {
 
   const strength = getPasswordStrength(formData.password);
 
-  // Debounced username check
-  useEffect(() => {
-    const checkUsername = async () => {
-      if (formData.username.length < 3) {
-        setUsernameAvailable(null);
-        return;
-      }
-      setIsCheckingUsername(true);
-      try {
-        // This endpoint doesn't exist yet, but let's assume it or mock it
-        // const response = await api.get(`/auth/check-username?username=${formData.username}`);
-        // setUsernameAvailable(response.data.available);
-        // For now, assume it's available if it passes validation
-        setUsernameAvailable(true);
-      } catch (error) {
-        setUsernameAvailable(false);
-      } finally {
-        setIsCheckingUsername(false);
-      }
-    };
-
-    const timeoutId = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.username]);
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -76,11 +51,7 @@ export default function RegisterScreen() {
       newErrors.displayName = 'Display name must be at least 2 characters';
     }
     
-    if (!formData.username || formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Only alphanumeric and underscore allowed';
-    }
+
     
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -104,23 +75,20 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     setApiError('');
-    if (!validate() || usernameAvailable === false) return;
+    if (!validate()) return;
 
     setIsLoading(true);
     try {
       const response = await api.post('/auth/register', {
         email: formData.email,
         password: formData.password,
-        username: formData.username,
         displayName: formData.displayName,
       });
       
       if (response.data.success) {
-        // Navigate to a screen to check their email
-        router.push({
-          pathname: '/(auth)/check-email', // This screen should probably exist, or we can just redirect to login with a message
-          params: { email: formData.email }
-        });
+        const { user, accessToken, refreshToken } = response.data.data;
+        await login(user, accessToken, refreshToken);
+        router.replace('/onboarding');
       }
     } catch (error: any) {
       if (error.response?.data?.message) {
@@ -159,30 +127,7 @@ export default function RegisterScreen() {
             editable={!isLoading}
           />
 
-          <View>
-            <Input
-              label="Username"
-              placeholder="jane_doe"
-              value={formData.username}
-              onChangeText={(text) => handleChange('username', text)}
-              onBlur={() => validate()}
-              error={errors.username}
-              leftIcon="at-outline"
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-            {isCheckingUsername && (
-              <ActivityIndicator size="small" className="absolute right-4 top-10" />
-            )}
-            {!isCheckingUsername && usernameAvailable === true && formData.username.length >= 3 && (
-              <Text className="text-green-500 text-xs mt-1 absolute -bottom-5">Username is available!</Text>
-            )}
-            {!isCheckingUsername && usernameAvailable === false && formData.username.length >= 3 && (
-              <Text className="text-red-500 text-xs mt-1 absolute -bottom-5">Username is taken</Text>
-            )}
-          </View>
-          
-          <View className="mt-4" />
+
 
           <Input
             label="Email"

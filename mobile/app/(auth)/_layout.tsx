@@ -3,8 +3,12 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function AuthLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
-  if (isAuthenticated) {
+  if (isAuthenticated && user) {
+    if (!user.genres || user.genres.length === 0) {
+      return <Redirect href="/onboarding" />;
+    }
     return <Redirect href="/(tabs)/home" />;
   }
 
@@ -12,7 +16,6 @@ export default function AuthLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
-      <Stack.Screen name="forgot-password" />
     </Stack>
   );
 }

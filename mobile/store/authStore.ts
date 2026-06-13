@@ -3,12 +3,10 @@ import { storage } from '../utils/storage';
 
 interface User {
   id: string;
-  username: string;
   email: string;
   displayName?: string;
   avatar?: string;
   role: string;
-  isVerified: boolean;
   isActive: boolean;
   experienceLevel?: string;
   dailyWordCount?: number;

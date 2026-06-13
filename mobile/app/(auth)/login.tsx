@@ -40,10 +40,6 @@ export default function LoginScreen() {
         const { user, accessToken, refreshToken } = response.data.data;
         await login(user, accessToken, refreshToken);
         
-        // If not verified or no genres, go to onboarding, else home
-        if (!user.isVerified) {
-           router.replace('/(auth)/check-email'); // We'll skip this for now or navigate to verify
-        }
         if (!user.genres || user.genres.length === 0) {
           router.replace('/onboarding');
         } else {
@@ -107,13 +103,7 @@ export default function LoginScreen() {
             editable={!isLoading}
           />
 
-          <View className="flex-row justify-end mt-2 mb-4">
-            <Link href="/(auth)/forgot-password" asChild>
-              <TouchableOpacity>
-                <Text className="text-blue-600 font-medium text-sm">Forgot password?</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
+
         </View>
 
         <Button
