@@ -33,6 +33,11 @@ model User {
   notifications    Notification[]
   ideas            Idea[]
   ideaReplies      IdeaReply[]
+
+  prompts          Prompt[]
+  promptUpvotes    PromptUpvote[]
+  promptSubmissions PromptSubmission[]
+  submissionComments SubmissionComment[]
 }
 
 enum Role {
@@ -165,4 +170,63 @@ model IdeaReply {
 
   idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+enum PromptType {
+  DAILY
+  COMMUNITY
+}
+
+model Prompt {
+  id              String             @id @default(uuid())
+  content         String             @db.Text
+  genre           Genre
+  theme           String?
+  type            PromptType         @default(COMMUNITY)
+  isPublished     Boolean            @default(false)
+  publishedAt     DateTime?
+  authorId        String?            
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  author          User?              @relation(fields: [authorId], references: [id])
+  upvotes         PromptUpvote[]
+  submissions     PromptSubmission[]
+}
+
+model PromptUpvote {
+  promptId        String
+  userId          String
+  createdAt       DateTime           @default(now())
+
+  prompt          Prompt             @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([promptId, userId])
+}
+
+model PromptSubmission {
+  id              String             @id @default(uuid())
+  promptId        String
+  authorId        String
+  content         String             @db.Text
+  wordCount       Int
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  prompt          Prompt             @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  author          User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments        SubmissionComment[]
+}
+
+model SubmissionComment {
+  id              String             @id @default(uuid())
+  submissionId    String
+  authorId        String
+  content         String             @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  submission      PromptSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  author          User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }

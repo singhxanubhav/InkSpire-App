@@ -7,6 +7,7 @@ import { env } from './config/env';
 import authRouter from './modules/auth/auth.routes';
 import userRouter from './modules/users/user.routes';
 import matchesRouter from './modules/matches/matches.routes';
+import promptsRouter from './modules/prompts/prompts.routes';
 
 const app = express();
 
@@ -49,6 +50,7 @@ apiRouter.get('/health', (req, res) => {
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/matches', matchesRouter);
+apiRouter.use('/prompts', promptsRouter);
 
 app.use('/api', apiRouter);
 

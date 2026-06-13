@@ -46,20 +46,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="write"
+        name="prompts"
         options={{
-          title: 'Write',
+          title: 'Prompts',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'pencil' : 'pencil-outline'} size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} size={24} color={color} />
+            <Ionicons name={focused ? 'bulb' : 'bulb-outline'} size={24} color={color} />
           ),
         }}
       />
