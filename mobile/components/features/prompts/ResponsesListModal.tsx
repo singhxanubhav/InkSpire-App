@@ -89,7 +89,7 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
     <>
       <BottomSheetModal
         ref={bottomSheetRef}
-        index={-1}
+        index={0}
         snapPoints={snapPoints}
         enablePanDownToClose
         onDismiss={onClose}

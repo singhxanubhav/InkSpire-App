@@ -68,7 +68,7 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      index={-1}
+      index={0}
       snapPoints={snapPoints}
       enablePanDownToClose
       onDismiss={onClose}
