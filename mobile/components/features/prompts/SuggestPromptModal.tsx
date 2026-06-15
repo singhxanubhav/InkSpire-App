@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -24,15 +24,15 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
   
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
   const snapPoints = useMemo(() => ['90%'], []);
 
   React.useEffect(() => {
     if (isVisible) {
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
       // Reset form
       setContent('');
       setGenre('');
@@ -75,12 +75,12 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
   );
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
-      onClose={onClose}
+      onDismiss={onClose}
       backdropComponent={renderBackdrop}
       handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
       backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
@@ -164,7 +164,7 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
         type={toast.type} 
         onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
       />
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }
 

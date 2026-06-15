@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -14,7 +14,7 @@ interface CommentThreadProps {
 
 export default function CommentThread({ isVisible, submissionId, onClose }: CommentThreadProps) {
   const [content, setContent] = useState('');
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
   
@@ -22,9 +22,9 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
 
   useEffect(() => {
     if (isVisible) {
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
       setContent('');
     }
   }, [isVisible]);
@@ -137,12 +137,12 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
   };
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
-      onClose={onClose}
+      onDismiss={onClose}
       backdropComponent={renderBackdrop}
       handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
       backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
@@ -196,7 +196,7 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
         </View>
       </KeyboardAvoidingView>
 
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }
 

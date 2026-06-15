@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, Keyboard, Platform } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,16 +18,16 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
   const [content, setContent] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
 
   const snapPoints = useMemo(() => ['90%', '100%'], []);
 
   React.useEffect(() => {
     if (isVisible) {
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
       setContent('');
     }
   }, [isVisible]);
@@ -66,12 +66,12 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
   if (!prompt) return null;
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={bottomSheetRef}
       index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
-      onClose={onClose}
+      onDismiss={onClose}
       backdropComponent={renderBackdrop}
       handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
       backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
@@ -117,7 +117,7 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
         type={toast.type} 
         onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
       />
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }
 

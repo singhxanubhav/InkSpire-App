@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -13,15 +13,15 @@ interface ResponsesListModalProps {
 }
 
 export default function ResponsesListModal({ isVisible, prompt, onClose }: ResponsesListModalProps) {
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['90%', '100%'], []);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isVisible) {
-      bottomSheetRef.current?.expand();
+      bottomSheetRef.current?.present();
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.dismiss();
     }
   }, [isVisible]);
 
@@ -87,12 +87,12 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
 
   return (
     <>
-      <BottomSheet
+      <BottomSheetModal
         ref={bottomSheetRef}
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
-        onClose={onClose}
+        onDismiss={onClose}
         backdropComponent={renderBackdrop}
         handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
         backgroundStyle={{ backgroundColor: '#f9fafb', borderRadius: 24 }}
@@ -125,18 +125,13 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
             }
           />
         )}
-      </BottomSheet>
+      </BottomSheetModal>
 
-      <View 
-        style={StyleSheet.absoluteFill}
-        pointerEvents={selectedSubmissionId ? "box-none" : "none"}
-      >
-        <CommentThread 
-          isVisible={!!selectedSubmissionId}
-          submissionId={selectedSubmissionId || ''}
-          onClose={() => setSelectedSubmissionId(null)}
-        />
-      </View>
+      <CommentThread 
+        isVisible={!!selectedSubmissionId}
+        submissionId={selectedSubmissionId || ''}
+        onClose={() => setSelectedSubmissionId(null)}
+      />
     </>
   );
 }

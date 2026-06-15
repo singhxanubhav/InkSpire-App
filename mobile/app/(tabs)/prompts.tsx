@@ -299,27 +299,22 @@ export default function PromptsScreen() {
         }
       />
 
-      <View 
-        style={StyleSheet.absoluteFill} 
-        pointerEvents={showResponseModal || showSuggestModal || showResponsesList ? "box-none" : "none"}
-      >
-        <PromptResponseModal 
-          isVisible={showResponseModal}
-          prompt={selectedPrompt}
-          onClose={() => setShowResponseModal(false)}
-        />
+      <PromptResponseModal 
+        isVisible={showResponseModal}
+        prompt={selectedPrompt}
+        onClose={() => setShowResponseModal(false)}
+      />
 
-        <SuggestPromptModal
-          isVisible={showSuggestModal}
-          onClose={() => setShowSuggestModal(false)}
-        />
+      <SuggestPromptModal
+        isVisible={showSuggestModal}
+        onClose={() => setShowSuggestModal(false)}
+      />
 
-        <ResponsesListModal
-          isVisible={showResponsesList}
-          prompt={selectedPrompt}
-          onClose={() => setShowResponsesList(false)}
-        />
-      </View>
+      <ResponsesListModal
+        isVisible={showResponsesList}
+        prompt={selectedPrompt}
+        onClose={() => setShowResponsesList(false)}
+      />
 
     </SafeAreaView>
   );
