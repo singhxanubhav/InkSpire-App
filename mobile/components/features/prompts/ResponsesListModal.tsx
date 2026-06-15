@@ -1,6 +1,5 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Share, Modal, Platform, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -13,17 +12,7 @@ interface ResponsesListModalProps {
 }
 
 export default function ResponsesListModal({ isVisible, prompt, onClose }: ResponsesListModalProps) {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['90%', '100%'], []);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isVisible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [isVisible]);
 
   const { data: responsesData, isLoading } = useQuery({
     queryKey: ['promptSubmissions', prompt?.id],
@@ -44,10 +33,6 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
       console.error('Error sharing:', error.message);
     }
   };
-
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} onPress={onClose} />
-  );
 
   const renderResponse = ({ item }: { item: any }) => (
     <View style={styles.responseCard}>
@@ -87,45 +72,51 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
 
   return (
     <>
-      <BottomSheetModal
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        onDismiss={onClose}
-        backdropComponent={renderBackdrop}
-        handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
-        backgroundStyle={{ backgroundColor: '#f9fafb', borderRadius: 24 }}
+      <Modal
+        visible={isVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={onClose}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Responses</Text>
-          <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
-        </View>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+          
+          <SafeAreaView style={styles.modalContent}>
+            <View style={styles.handleContainer}>
+              <View style={styles.handle} />
+            </View>
 
-        {prompt && (
-          <View style={styles.promptReference}>
-            <Text style={styles.promptText}>"{prompt.content}"</Text>
-          </View>
-        )}
+            <View style={styles.header}>
+              <Text style={styles.title}>Responses</Text>
+              <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+            </View>
 
-        {isLoading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color="#4f46e5" />
-          </View>
-        ) : (
-          <FlatList
-            data={responsesData?.data || []}
-            keyExtractor={item => item.id}
-            renderItem={renderResponse}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No responses yet. Be the first to write!</Text>
+            {prompt && (
+              <View style={styles.promptReference}>
+                <Text style={styles.promptText}>"{prompt.content}"</Text>
               </View>
-            }
-          />
-        )}
-      </BottomSheetModal>
+            )}
+
+            {isLoading ? (
+              <View style={styles.loader}>
+                <ActivityIndicator size="large" color="#4f46e5" />
+              </View>
+            ) : (
+              <FlatList
+                data={responsesData?.data || []}
+                keyExtractor={item => item.id}
+                renderItem={renderResponse}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>No responses yet. Be the first to write!</Text>
+                  </View>
+                }
+              />
+            )}
+          </SafeAreaView>
+        </View>
+      </Modal>
 
       <CommentThread 
         isVisible={!!selectedSubmissionId}
@@ -137,6 +128,39 @@ export default function ResponsesListModal({ isVisible, prompt, onClose }: Respo
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContent: {
+    backgroundColor: '#f9fafb',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '95%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: '#f9fafb',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -155,6 +179,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
   },
   promptText: {
     fontSize: 14,

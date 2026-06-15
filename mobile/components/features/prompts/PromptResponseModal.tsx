@@ -1,6 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, Keyboard, Platform } from 'react-native';
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Keyboard, Platform, Modal, ScrollView, SafeAreaView, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,16 +17,10 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
   const [content, setContent] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
 
-  const snapPoints = useMemo(() => ['90%', '100%'], []);
-
   React.useEffect(() => {
-    if (isVisible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
+    if (!isVisible) {
       setContent('');
     }
   }, [isVisible]);
@@ -51,7 +44,6 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
       queryClient.invalidateQueries({ queryKey: ['dailyPrompt'] });
 
       onClose();
-      // A global toast would be better here, but we'll let the user see the change on the My Responses tab
     } catch (e: any) {
       setToast({ visible: true, message: e.response?.data?.message || 'Failed to publish response.', type: 'error' });
     } finally {
@@ -59,57 +51,59 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
     }
   };
 
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} onPress={onClose} />
-  );
-
   if (!prompt) return null;
 
   return (
-    <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onDismiss={onClose}
-      backdropComponent={renderBackdrop}
-      handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
-      backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
     >
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
-          <Text style={styles.title}>Write Response</Text>
+      <KeyboardAvoidingView 
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        
+        <View style={styles.modalContent}>
+          <View style={styles.handleContainer}>
+            <View style={styles.handle} />
+          </View>
+
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+              <Text style={styles.title}>Write Response</Text>
+            </View>
+            <Button 
+              title="Publish" 
+              onPress={handlePublish} 
+              disabled={!isEnabled || isPublishing}
+              loading={isPublishing}
+              style={styles.publishBtn}
+            />
+          </View>
+
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.promptReference}>
+              <Text style={styles.promptLabel}>Prompt</Text>
+              <Text style={styles.promptText}>"{prompt.content}"</Text>
+            </View>
+
+            <TextInput
+              style={styles.editor}
+              multiline
+              placeholder="Start writing your story..."
+              placeholderTextColor="#9ca3af"
+              value={content}
+              onChangeText={setContent}
+              textAlignVertical="top"
+              autoFocus
+            />
+          </ScrollView>
         </View>
-        <Button 
-          title="Publish" 
-          onPress={handlePublish} 
-          disabled={!isEnabled || isPublishing}
-          loading={isPublishing}
-          style={styles.publishBtn}
-        />
-      </View>
-
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
-        <View style={styles.promptReference}>
-          <Text style={styles.promptLabel}>Prompt</Text>
-          <Text style={styles.promptText}>"{prompt.content}"</Text>
-        </View>
-
-        <TextInput
-          style={styles.editor}
-          multiline
-          placeholder="Start writing your story..."
-          placeholderTextColor="#9ca3af"
-          value={content}
-          onChangeText={setContent}
-          textAlignVertical="top"
-          autoFocus
-        />
-      </BottomSheetScrollView>
-
+      </KeyboardAvoidingView>
 
       <Toast 
         visible={toast.visible} 
@@ -117,11 +111,41 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
         type={toast.type} 
         onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
       />
-    </BottomSheetModal>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '95%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

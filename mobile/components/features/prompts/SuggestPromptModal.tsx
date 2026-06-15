@@ -1,6 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity } from 'react-native';
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, Modal, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -24,16 +23,10 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success'|'error'|'info' });
   
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
-  const snapPoints = useMemo(() => ['90%'], []);
 
   React.useEffect(() => {
-    if (isVisible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
-      // Reset form
+    if (!isVisible) {
       setContent('');
       setGenre('');
       setTheme('');
@@ -54,11 +47,8 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
 
     try {
       await api.post('/prompts/community', { content: content.trim(), genre, theme: theme.trim() });
-      
       queryClient.invalidateQueries({ queryKey: ['communityPrompts'] });
-      
       onClose();
-      // In a real app we might show a global toast here "Prompt suggested!"
     } catch (e: any) {
       setToast({ 
         visible: true, 
@@ -70,93 +60,96 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
     }
   };
 
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} onPress={onClose} />
-  );
-
   return (
-    <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onDismiss={onClose}
-      backdropComponent={renderBackdrop}
-      handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
-      backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Suggest a Prompt</Text>
-        <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
-      </View>
-
-      <BottomSheetScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView 
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         
-        {/* Prompt Content */}
-        <View style={styles.field}>
-          <Text style={styles.label}>The Prompt</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            multiline
-            placeholder="E.g. A time traveler goes back to fix a mistake, but..."
-            value={content}
-            onChangeText={setContent}
-            maxLength={200}
-            textAlignVertical="top"
-          />
-          <View style={styles.charCountContainer}>
-            <Text style={[styles.charCount, (charCount < 20 || charCount > 200) ? styles.charCountInvalid : styles.charCountValid]}>
-              {charCount} / 200
-            </Text>
-            {charCount < 20 && <Text style={styles.charCountReq}>(Min 20)</Text>}
+        <View style={styles.modalContent}>
+          <View style={styles.handleContainer}>
+            <View style={styles.handle} />
           </View>
-        </View>
+          
+          <View style={styles.header}>
+            <Text style={styles.title}>Suggest a Prompt</Text>
+            <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+          </View>
 
-        {/* Genre */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Genre</Text>
-          <View style={styles.genreContainer}>
-            {GENRES.map(g => (
-              <TouchableOpacity
-                key={g}
-                style={[styles.genreChip, genre === g && styles.genreChipActive]}
-                onPress={() => setGenre(g)}
-              >
-                <Text style={[styles.genreText, genre === g && styles.genreTextActive]}>
-                  {g.replace('_', ' ')}
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            
+            {/* Prompt Content */}
+            <View style={styles.field}>
+              <Text style={styles.label}>The Prompt</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                multiline
+                placeholder="E.g. A time traveler goes back to fix a mistake, but..."
+                value={content}
+                onChangeText={setContent}
+                maxLength={200}
+                textAlignVertical="top"
+              />
+              <View style={styles.charCountContainer}>
+                <Text style={[styles.charCount, (charCount < 20 || charCount > 200) ? styles.charCountInvalid : styles.charCountValid]}>
+                  {charCount} / 200
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                {charCount < 20 && <Text style={styles.charCountReq}>(Min 20)</Text>}
+              </View>
+            </View>
+
+            {/* Genre */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Genre</Text>
+              <View style={styles.genreContainer}>
+                {GENRES.map(g => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.genreChip, genre === g && styles.genreChipActive]}
+                    onPress={() => setGenre(g)}
+                  >
+                    <Text style={[styles.genreText, genre === g && styles.genreTextActive]}>
+                      {g.replace('_', ' ')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Theme (Optional) */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Theme <Text style={styles.optional}>(Optional)</Text></Text>
+              <TextInput
+                style={styles.input}
+                placeholder="E.g. Betrayal, Magic, Cyberpunk"
+                value={theme}
+                onChangeText={setTheme}
+                maxLength={50}
+              />
+            </View>
+
+            <Button 
+              title="Submit Prompt" 
+              onPress={handleSubmit} 
+              disabled={!isEnabled || isSubmitting}
+              loading={isSubmitting}
+              style={styles.submitBtn}
+            />
+            
+            <Text style={styles.disclaimer}>
+              You can suggest up to 3 prompts per day. Prompts with 10 upvotes are automatically published.
+            </Text>
+
+          </ScrollView>
         </View>
-
-        {/* Theme (Optional) */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Theme <Text style={styles.optional}>(Optional)</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholder="E.g. Betrayal, Magic, Cyberpunk"
-            value={theme}
-            onChangeText={setTheme}
-            maxLength={50}
-          />
-        </View>
-
-        <Button 
-          title="Submit Prompt" 
-          onPress={handleSubmit} 
-          disabled={!isEnabled || isSubmitting}
-          loading={isSubmitting}
-          style={styles.submitBtn}
-        />
-        
-        <Text style={styles.disclaimer}>
-          You can suggest up to 3 prompts per day. Prompts with 10 upvotes are automatically published.
-        </Text>
-
-      </BottomSheetScrollView>
+      </KeyboardAvoidingView>
 
       <Toast 
         visible={toast.visible} 
@@ -164,7 +157,7 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
         type={toast.type} 
         onHide={() => setToast(prev => ({ ...prev, visible: false }))} 
       />
-    </BottomSheetModal>
+    </Modal>
   );
 }
 
@@ -268,5 +261,35 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 18,
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+  },
 });

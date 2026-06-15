@@ -1,6 +1,5 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Modal, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
@@ -14,17 +13,11 @@ interface CommentThreadProps {
 
 export default function CommentThread({ isVisible, submissionId, onClose }: CommentThreadProps) {
   const [content, setContent] = useState('');
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
-  
-  const snapPoints = useMemo(() => ['50%', '90%'], []);
 
-  useEffect(() => {
-    if (isVisible) {
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
+  React.useEffect(() => {
+    if (!isVisible) {
       setContent('');
     }
   }, [isVisible]);
@@ -112,10 +105,6 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
     );
   };
 
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} onPress={onClose} />
-  );
-
   const renderComment = ({ item }: { item: any }) => {
     const isOwn = item.authorId === user?.id;
     return (
@@ -137,70 +126,103 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
   };
 
   return (
-    <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onDismiss={onClose}
-      backdropComponent={renderBackdrop}
-      handleIndicatorStyle={{ backgroundColor: '#e5e7eb', width: 40 }}
-      backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Comments</Text>
-        <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
-      </View>
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        
+        <SafeAreaView style={styles.modalContent}>
+          <View style={styles.handleContainer}>
+            <View style={styles.handle} />
+          </View>
 
-      {isLoading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#4f46e5" />
-        </View>
-      ) : (
-        <FlatList
-          data={comments}
-          keyExtractor={(item) => item.id}
-          renderItem={renderComment}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No comments yet. Be the first to share your thoughts!</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Comments</Text>
+            <Ionicons name="close" size={24} color="#6b7280" onPress={onClose} />
+          </View>
+
+          {isLoading ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color="#4f46e5" />
             </View>
-          }
-        />
-      )}
+          ) : (
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              renderItem={renderComment}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No comments yet. Be the first to share your thoughts!</Text>
+                </View>
+              }
+            />
+          )}
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-      >
-        <View style={styles.inputArea}>
-          <TextInput
-            style={styles.input}
-            placeholder="Add a comment..."
-            placeholderTextColor="#9ca3af"
-            value={content}
-            onChangeText={setContent}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity 
-            style={[styles.sendBtn, !content.trim() && styles.sendBtnDisabled]}
-            onPress={handleSend}
-            disabled={!content.trim() || addCommentMutation.isPending}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           >
-            <Ionicons name="send" size={18} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-
-    </BottomSheetModal>
+            <View style={styles.inputArea}>
+              <TextInput
+                style={styles.input}
+                placeholder="Add a comment..."
+                placeholderTextColor="#9ca3af"
+                value={content}
+                onChangeText={setContent}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity 
+                style={[styles.sendBtn, !content.trim() && styles.sendBtnDisabled]}
+                onPress={handleSend}
+                disabled={!content.trim() || addCommentMutation.isPending}
+              >
+                <Ionicons name="send" size={18} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -222,7 +244,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 20,
-    paddingBottom: 100, // room for input
+    paddingBottom: 20,
   },
   commentItem: {
     marginBottom: 16,
@@ -281,7 +303,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4f46e5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 2, // align with input bottom roughly
+    marginBottom: 2,
   },
   sendBtnDisabled: {
     backgroundColor: '#9ca3af',
