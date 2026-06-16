@@ -5,7 +5,9 @@ import { useAuthStore } from '../store/authStore';
 
 const getBaseUrl = () => {
   if (!__DEV__) return 'https://api.inkspire.com/api';
-  // Use 10.0.2.2 for Android emulator, localhost for iOS simulator
+  // Use env variable if provided (crucial for physical devices)
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  // Use 10.0.2.2 for Android emulator, localhost for iOS simulator/Web
   return Platform.OS === 'android' ? 'http://10.0.2.2:8000/api' : 'http://localhost:8000/api';
 };
 

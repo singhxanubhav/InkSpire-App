@@ -9,6 +9,7 @@ import userRouter from './modules/users/user.routes';
 import matchesRouter from './modules/matches/matches.routes';
 import promptsRouter from './modules/prompts/prompts.routes';
 import feedbackRouter from './modules/feedback/feedback.routes';
+import progressRouter from './modules/progress/progress.routes';
 
 const app = express();
 
@@ -53,6 +54,7 @@ apiRouter.use('/users', userRouter);
 apiRouter.use('/matches', matchesRouter);
 apiRouter.use('/prompts', promptsRouter);
 apiRouter.use('/feedback', feedbackRouter);
+apiRouter.use('/progress', progressRouter);
 
 app.use('/api', apiRouter);
 
