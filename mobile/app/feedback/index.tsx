@@ -93,7 +93,13 @@ export default function BrowseRequestsScreen() {
           </View>
           <Text style={styles.authorName}>{item.author?.displayName || 'Anonymous'}</Text>
         </View>
-        <Text style={styles.genreTag}>{item.genre?.replace(/_/g, ' ')}</Text>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <View style={styles.statusBadge}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusBadgeText}>Open</Text>
+          </View>
+          <Text style={styles.genreTag}>{item.genre?.replace(/_/g, ' ')}</Text>
+        </View>
       </View>
       
       <Text style={styles.title}>{item.title}</Text>
@@ -258,6 +264,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5', // emerald-50
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#a7f3d0', // emerald-200
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981', // emerald-500
+    marginRight: 4,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669', // emerald-600
   },
   title: {
     fontSize: 18,
