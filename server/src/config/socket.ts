@@ -70,6 +70,81 @@ export const initializeSocket = (server: HttpServer) => {
     });
   });
 
+  const sprintNamespace = io.of('/sprint');
+
+  sprintNamespace.use(async (socket: Socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+      if (!token) return next(new Error('Authentication error'));
+
+      const decoded = jwt.verify(token, env.JWT_SECRET || 'secret') as { id: string; email: string };
+      socket.data.user = decoded;
+      next();
+    } catch (err) {
+      next(new Error('Authentication error'));
+    }
+  });
+
+  sprintNamespace.on('connection', (socket: Socket) => {
+    console.log(`Socket connected to /sprint: ${socket.id}`);
+
+    socket.on('join_sprint', async (eventId: string) => {
+      try {
+        const userId = socket.data.user.id;
+        const participant = await prisma.eventParticipant.findUnique({
+          where: { eventId_userId: { eventId, userId } },
+          include: { user: { select: { id: true, displayName: true, avatar: true } } }
+        });
+
+        if (!participant) {
+          return socket.emit('error', 'Not a participant in this sprint');
+        }
+
+        const roomName = `sprint:${eventId}`;
+        socket.join(roomName);
+        console.log(`User ${userId} joined sprint room ${roomName}`);
+
+        // Broadcast to others that someone joined
+        socket.to(roomName).emit('participant:joined', {
+          userId,
+          displayName: participant.user.displayName,
+          avatar: participant.user.avatar,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    socket.on('update_word_count', async (data: { eventId: string, wordCount: number }) => {
+      try {
+        const userId = socket.data.user.id;
+        const roomName = `sprint:${data.eventId}`;
+        
+        // Update DB
+        await prisma.eventParticipant.update({
+          where: { eventId_userId: { eventId: data.eventId, userId } },
+          data: { wordCount: data.wordCount }
+        });
+
+        // Broadcast update to room
+        socket.to(roomName).emit('count:updated', {
+          userId,
+          wordCount: data.wordCount
+        });
+      } catch (err) {
+        console.error('Failed to update word count via socket', err);
+      }
+    });
+
+    socket.on('leave_sprint', (eventId: string) => {
+      socket.leave(`sprint:${eventId}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`Socket disconnected from /sprint: ${socket.id}`);
+    });
+  });
+
   return io;
 };
 

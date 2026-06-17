@@ -10,6 +10,7 @@ import matchesRouter from './modules/matches/matches.routes';
 import promptsRouter from './modules/prompts/prompts.routes';
 import feedbackRouter from './modules/feedback/feedback.routes';
 import progressRouter from './modules/progress/progress.routes';
+import eventsRouter from './modules/events/events.routes';
 
 const app = express();
 
@@ -55,6 +56,7 @@ apiRouter.use('/matches', matchesRouter);
 apiRouter.use('/prompts', promptsRouter);
 apiRouter.use('/feedback', feedbackRouter);
 apiRouter.use('/progress', progressRouter);
+apiRouter.use('/events', eventsRouter);
 
 app.use('/api', apiRouter);
 
