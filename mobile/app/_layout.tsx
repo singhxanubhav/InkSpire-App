@@ -5,11 +5,18 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { LogBox } from 'react-native';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { NetworkBanner } from '../components/ui/NetworkBanner';
 import '../global.css';
 
 const queryClient = new QueryClient();
+
+// Suppress the Expo Go push notification warning/error since we gracefully handle it
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go'
+]);
 
 export default function RootLayout() {
   return (
