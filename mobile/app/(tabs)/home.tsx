@@ -85,105 +85,117 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Active Matches */}
-        {activeMatches.length > 0 && (
-          <View className="mb-6">
-            <Text className="text-lg font-bold text-gray-900 mb-4">Your Co-Writers</Text>
+        {/* Quick Actions Grid */}
+        <Text className="text-lg font-extrabold text-gray-900 mb-4">Quick Actions</Text>
+        <View className="flex-row justify-between mb-8 gap-3">
+          <TouchableOpacity 
+            className="flex-1 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm items-center"
+            onPress={() => router.push('/discover')}
+          >
+            <View className="w-12 h-12 bg-blue-50 rounded-full items-center justify-center mb-3">
+              <Ionicons name="search" size={24} color="#3b82f6" />
+            </View>
+            <Text className="font-bold text-gray-900 text-center">Find Writers</Text>
+            <Text className="text-xs text-gray-500 text-center mt-1">Matchmaking</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            className="flex-1 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm items-center"
+            onPress={() => router.push('/events')}
+          >
+            <View className="w-12 h-12 bg-purple-50 rounded-full items-center justify-center mb-3">
+              <Ionicons name="flash" size={24} color="#8b5cf6" />
+            </View>
+            <Text className="font-bold text-gray-900 text-center">Live Sprints</Text>
+            <Text className="text-xs text-gray-500 text-center mt-1">Join Events</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            className="flex-1 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm items-center"
+            onPress={() => router.push('/feedback')}
+          >
+            <View className="w-12 h-12 bg-emerald-50 rounded-full items-center justify-center mb-3">
+              <Ionicons name="chatbubbles" size={24} color="#10b981" />
+            </View>
+            <Text className="font-bold text-gray-900 text-center">Feedback</Text>
+            <Text className="text-xs text-gray-500 text-center mt-1">Get Reviews</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Active Workspaces / Matches */}
+        <View className="mb-8">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-lg font-extrabold text-gray-900">Your Workspaces</Text>
+            {activeMatches.length > 0 && (
+              <Text className="text-sm font-bold text-indigo-600">{activeMatches.length} Active</Text>
+            )}
+          </View>
+
+          {activeMatches.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {activeMatches.map((match) => (
                 <TouchableOpacity 
                   key={match.matchId}
-                  className="bg-white border border-gray-200 rounded-2xl p-4 mr-4 items-center w-32 shadow-sm"
+                  className="bg-white border border-gray-100 rounded-3xl p-5 mr-4 items-center w-36 shadow-sm"
                   onPress={() => router.push(`/match/${match.matchId}`)}
                 >
-                  <View className="w-16 h-16 bg-indigo-100 rounded-full mb-3 items-center justify-center">
-                    <Text className="text-xl font-bold text-indigo-700">
+                  <View className="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full mb-3 items-center justify-center shadow-sm">
+                    <Text className="text-xl font-extrabold text-indigo-600">
                       {match.partner?.displayName?.charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  <Text className="font-bold text-gray-900 text-center" numberOfLines={1}>
+                  <Text className="font-bold text-gray-900 text-center mb-1" numberOfLines={1}>
                     {match.partner?.displayName}
                   </Text>
-                  <Text className="text-xs text-indigo-600 mt-1">Workspace</Text>
+                  <View className="bg-indigo-50 px-2 py-1 rounded-md mt-1">
+                    <Text className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Workspace</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        )}
-
-        {/* Daily Goal Card */}
-        <View className="bg-white rounded-2xl p-5 mb-6 border border-gray-100 shadow-sm">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-lg font-bold text-gray-900">Daily Goal</Text>
-            <View className="bg-blue-100 px-3 py-1 rounded-full">
-              <Text className="text-blue-700 font-semibold text-xs">0 / {user?.dailyWordCount || 500} words</Text>
+          ) : (
+            <View className="bg-white border border-gray-100 rounded-2xl p-6 items-center justify-center shadow-sm">
+              <View className="w-16 h-16 bg-gray-50 rounded-full items-center justify-center mb-3">
+                <Ionicons name="folder-open-outline" size={28} color="#9ca3af" />
+              </View>
+              <Text className="text-gray-900 font-bold mb-1">No Active Workspaces</Text>
+              <Text className="text-gray-500 text-sm text-center">Match with a co-writer to start collaborating.</Text>
+              <TouchableOpacity 
+                className="mt-4 bg-indigo-50 px-6 py-2 rounded-full"
+                onPress={() => router.push('/discover')}
+              >
+                <Text className="text-indigo-600 font-bold">Find a Match</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-          <View className="h-2 bg-gray-100 rounded-full w-full mb-4">
-            <View className="h-full bg-blue-500 rounded-full w-2" />
-          </View>
-          <TouchableOpacity className="bg-blue-600 py-3 rounded-xl items-center">
-            <Text className="text-white font-bold">Start Writing</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Peer Feedback Entry */}
-        <TouchableOpacity 
-          className="bg-indigo-600 rounded-2xl p-5 mb-6 shadow-sm flex-row items-center justify-between"
-          onPress={() => router.push('/feedback')}
-        >
-          <View className="flex-1 mr-4">
-            <Text className="text-xl font-bold text-white mb-1">Peer Feedback</Text>
-            <Text className="text-indigo-100 text-sm">Get structured critique on your drafts or help other writers.</Text>
-          </View>
-          <View className="w-12 h-12 bg-indigo-500 rounded-full items-center justify-center">
-            <Ionicons name="chatbubbles" size={24} color="#fff" />
-          </View>
-        </TouchableOpacity>
-
-        {/* Your Genres */}
-        <Text className="text-lg font-bold text-gray-900 mb-4">Your Genres</Text>
-        <View className="flex-row flex-wrap gap-2 mb-8">
-          {user?.genres?.map((genre) => (
-            <View key={genre} className="bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100">
-              <Text className="text-indigo-700 font-medium capitalize">
-                {genre.replace('_', ' ').toLowerCase()}
-              </Text>
-            </View>
-          ))}
-          {(!user?.genres || user.genres.length === 0) && (
-            <Text className="text-gray-500 italic">No genres selected yet.</Text>
           )}
         </View>
-        
-        {/* Placeholder Feed */}
-        <Text className="text-lg font-bold text-gray-900 mb-4">Community Feed</Text>
-        {[1, 2, 3].map((i) => (
-          <View key={i} className="bg-white p-5 rounded-2xl mb-4 border border-gray-100 shadow-sm">
-            <View className="flex-row items-center mb-3">
-              <View className="w-10 h-10 bg-gray-200 rounded-full mr-3 items-center justify-center">
-                <Ionicons name="person" size={20} color="#9ca3af" />
-              </View>
-              <View>
-                <Text className="font-bold text-gray-900">Fellow Writer</Text>
-                <Text className="text-xs text-gray-500">2 hours ago</Text>
-              </View>
+
+        {/* Daily Goal Card */}
+        <View className="bg-white rounded-3xl p-6 mb-8 border border-gray-100 shadow-sm relative overflow-hidden">
+          {/* Subtle background decoration */}
+          <View className="absolute -right-6 -top-6 w-32 h-32 bg-blue-50 rounded-full opacity-50" />
+          
+          <View className="flex-row justify-between items-end mb-6 relative z-10">
+            <View>
+              <Text className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Daily Progress</Text>
+              <Text className="text-2xl font-extrabold text-gray-900">0 <Text className="text-lg text-gray-400 font-medium">/ {user?.dailyWordCount || 500} words</Text></Text>
             </View>
-            <Text className="text-gray-700 leading-relaxed mb-4">
-              Just hit my daily word count goal! The secret is to just start typing, even if it feels like nonsense at first. Editing comes later! ✨
-            </Text>
-            <View className="flex-row gap-6">
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="heart-outline" size={20} color="#6b7280" />
-                <Text className="text-gray-500 text-sm">24</Text>
-              </View>
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="chatbubble-outline" size={20} color="#6b7280" />
-                <Text className="text-gray-500 text-sm">5</Text>
-              </View>
+            <View className="w-12 h-12 bg-blue-100 rounded-2xl items-center justify-center">
+              <Ionicons name="pencil" size={24} color="#2563eb" />
             </View>
           </View>
-        ))}
+
+          <View className="h-3 bg-gray-100 rounded-full w-full mb-6 overflow-hidden">
+            <View className="h-full bg-blue-500 rounded-full w-2" />
+          </View>
+
+          <TouchableOpacity 
+            className="bg-gray-900 py-4 rounded-2xl items-center shadow-sm"
+            onPress={() => router.push('/progress')}
+          >
+            <Text className="text-white font-bold text-base">Log Words & View Stats</Text>
+          </TouchableOpacity>
+        </View>
         
         <View className="h-10" />
       </ScrollView>

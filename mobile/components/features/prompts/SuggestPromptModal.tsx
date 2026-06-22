@@ -76,13 +76,10 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
   }, [isVisible]);
 
   const charCount = content.length;
-  const isEnabled = charCount >= 20 && charCount <= 200 && genre !== '';
+  const isEnabled = true;
 
   const handleSubmit = async () => {
-    if (!isEnabled) {
-      setToast({ visible: true, message: 'Please write a valid prompt and select a genre.', type: 'error' });
-      return;
-    }
+    // if (!isEnabled) return;
 
     setIsSubmitting(true);
     Keyboard.dismiss();
@@ -146,15 +143,8 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
                   placeholderTextColor="#94a3b8"
                   value={content}
                   onChangeText={setContent}
-                  maxLength={200}
                   textAlignVertical="top"
                 />
-                <View style={styles.charCountContainer}>
-                  <Text style={[styles.charCount, (charCount < 20 || charCount > 200) ? styles.charCountInvalid : styles.charCountValid]}>
-                    {charCount} / 200
-                  </Text>
-                  {charCount < 20 && <Text style={styles.charCountReq}>(Min 20)</Text>}
-                </View>
               </View>
 
               {/* Genre */}

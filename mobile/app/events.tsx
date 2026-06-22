@@ -2,8 +2,8 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../services/api';
-import { EventCard } from '../../components/features/events/EventCard';
+import { api } from '../services/api';
+import { EventCard } from '../components/features/events/EventCard';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 

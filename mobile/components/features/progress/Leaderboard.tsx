@@ -19,7 +19,7 @@ export function Leaderboard() {
     const rankColors = ['#f59e0b', '#94a3b8', '#b45309']; // Gold, Silver, Bronze
 
     return (
-      <View style={styles.row}>
+      <View key={item.id || index} style={styles.row}>
         <View style={styles.rankContainer}>
           <Text style={[styles.rankText, isTop3 && { color: rankColors[item.rank - 1] }]}>
             #{item.rank}

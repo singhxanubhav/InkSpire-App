@@ -19,9 +19,7 @@ export default function SubmitRequestScreen() {
   const queryClient = useQueryClient();
 
   const wordCount = excerpt.trim() ? excerpt.trim().split(/\s+/).length : 0;
-  const isOverWordCount = wordCount > MAX_WORDS;
-  
-  const isFormValid = title.trim() && genre && excerpt.trim() && !isOverWordCount && focusAreas.length > 0;
+  const isFormValid = true;
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -42,7 +40,7 @@ export default function SubmitRequestScreen() {
   };
 
   const handleSubmit = () => {
-    if (!isFormValid) return;
+    // if (!isFormValid) return;
     mutation.mutate({
       title,
       genre,
@@ -85,12 +83,9 @@ export default function SubmitRequestScreen() {
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>Excerpt</Text>
-          <Text style={[styles.wordCount, isOverWordCount && styles.wordCountError]}>
-            {wordCount} / {MAX_WORDS} words
-          </Text>
         </View>
         <TextInput
-          style={[styles.input, styles.textArea, isOverWordCount && styles.inputError]}
+          style={[styles.input, styles.textArea]}
           placeholder="Paste your text here..."
           multiline
           value={excerpt}

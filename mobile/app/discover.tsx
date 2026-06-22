@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { api } from '../../services/api';
-import { WriterCard } from '../../components/features/matches/WriterCard';
-import { WriterProfileSheet } from '../../components/features/matches/WriterProfileSheet';
-import { Toast } from '../../components/ui/Toast';
+import { api } from '../services/api';
+import { WriterCard } from '../components/features/matches/WriterCard';
+import { WriterProfileSheet } from '../components/features/matches/WriterProfileSheet';
+import { Toast } from '../components/ui/Toast';
 
 export default function DiscoverScreen() {
   const [writers, setWriters] = useState<any[]>([]);

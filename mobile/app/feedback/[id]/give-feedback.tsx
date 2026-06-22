@@ -28,7 +28,7 @@ export default function GiveFeedbackScreen() {
   const overallWordCount = overallImpression.trim() ? overallImpression.trim().split(/\s+/).length : 0;
   const detailedWordCount = detailedNotes.trim() ? detailedNotes.trim().split(/\s+/).length : 0;
 
-  const isFormValid = overallWordCount >= 50 && detailedWordCount >= 100;
+  const isFormValid = true;
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -47,7 +47,7 @@ export default function GiveFeedbackScreen() {
   });
 
   const handleSubmit = () => {
-    if (!isFormValid) return;
+    // if (!isFormValid) return;
     
     Alert.alert(
       'Submit Feedback',
@@ -116,9 +116,6 @@ export default function GiveFeedbackScreen() {
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>Overall Impression</Text>
-          <Text style={[styles.wordCount, overallWordCount < 50 && styles.wordCountError]}>
-            {overallWordCount} / 50 min words
-          </Text>
         </View>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -139,9 +136,6 @@ export default function GiveFeedbackScreen() {
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>Detailed Notes</Text>
-          <Text style={[styles.wordCount, detailedWordCount < 100 && styles.wordCountError]}>
-            {detailedWordCount} / 100 min words
-          </Text>
         </View>
         <TextInput
           style={[styles.input, styles.textArea, { height: 200 }]}

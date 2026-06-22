@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { AvatarUpload } from '../../components/features/profile/AvatarUpload';
@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../services/api';
 
 export default function ProfileScreen() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +47,31 @@ export default function ProfileScreen() {
     setProfile((prev: any) => ({ ...prev, avatar: url }));
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out of InkSpire?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Log Out", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const refreshToken = useAuthStore.getState().refreshToken;
+              if (refreshToken) {
+                await api.post('/auth/logout', { refreshToken }).catch(() => {});
+              }
+            } finally {
+              await logout();
+              router.replace('/'); // Redirect to auth flow root
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -65,9 +90,6 @@ export default function ProfileScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color="#374151" />
-          </TouchableOpacity>
         </View>
 
         <AvatarUpload currentAvatarUrl={profile.avatar} onUploadSuccess={handleAvatarUpload} />
@@ -147,6 +169,16 @@ export default function ProfileScreen() {
               <Text style={[styles.goalText, { fontWeight: '600' }]}>Browse Feedback Requests</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={[styles.section, { marginTop: 20 }]}>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -293,5 +325,21 @@ const styles = StyleSheet.create({
   goalText: {
     fontSize: 15,
     color: '#374151',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    backgroundColor: '#fef2f2',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#fee2e2',
+  },
+  logoutText: {
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
