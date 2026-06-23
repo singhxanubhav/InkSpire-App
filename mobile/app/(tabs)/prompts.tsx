@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   suggestBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#8b5cf6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,

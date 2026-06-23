@@ -2,7 +2,6 @@ import React from 'react';
 import {
   KeyboardAvoidingView,
   ScrollView,
-  TouchableWithoutFeedback,
   Keyboard,
   Platform,
   StyleSheet,
@@ -50,7 +49,7 @@ export const KeyboardAvoidingWrapper: React.FC<KeyboardAvoidingWrapperProps> = (
   extraOffset = 0,
   className,
 }) => {
-  const content = (
+  return (
     <KeyboardAvoidingView
       style={[styles.flex, style]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -69,16 +68,6 @@ export const KeyboardAvoidingWrapper: React.FC<KeyboardAvoidingWrapperProps> = (
       </ScrollView>
     </KeyboardAvoidingView>
   );
-
-  if (dismissOnTap) {
-    return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        {content}
-      </TouchableWithoutFeedback>
-    );
-  }
-
-  return content;
 };
 
 const styles = StyleSheet.create({
