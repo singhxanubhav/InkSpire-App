@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { WriterCard } from '../components/features/matches/WriterCard';
 import { WriterProfileSheet } from '../components/features/matches/WriterProfileSheet';
 import { Toast } from '../components/ui/Toast';
+import { BackButton } from '../components/ui/BackButton';
 
 export default function DiscoverScreen() {
   const [writers, setWriters] = useState<any[]>([]);
@@ -105,6 +106,7 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <BackButton style={{ marginBottom: 12 }} />
         <Text style={styles.headerTitle}>Discover</Text>
         <Text style={styles.headerSubtitle}>Find your ideal writing partner</Text>
       </View>

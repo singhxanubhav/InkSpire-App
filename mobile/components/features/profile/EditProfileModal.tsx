@@ -107,9 +107,6 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
     >
       <View style={styles.header}>
         <Text style={styles.title}>Edit Profile</Text>
-        <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="close" size={24} color="#6b7280" />
-        </TouchableOpacity>
       </View>
       
       <BottomSheetScrollView contentContainerStyle={styles.content}>
@@ -189,9 +186,6 @@ export function EditProfileModal({ isVisible, onClose, initialData, onSave }: Ed
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,

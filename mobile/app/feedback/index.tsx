@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { api } from '../../services/api';
-
-const GENRES = ['FANTASY', 'SCI_FI', 'ROMANCE', 'MYSTERY', 'THRILLER', 'HORROR', 'LITERARY_FICTION', 'HISTORICAL_FICTION', 'NON_FICTION', 'POETRY', 'OTHER'];
-const FOCUS_AREAS = ['CLARITY', 'PACING', 'DIALOGUE', 'STRUCTURE', 'VOICE', 'CHARACTER'];
+import { FeedbackFilterSheet } from '../../components/features/feedback/FeedbackFilterSheet';
 
 export default function BrowseRequestsScreen() {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedFocus, setSelectedFocus] = useState<string[]>([]);
-  const insets = useSafeAreaInsets();
+  const [sortBy, setSortBy] = useState('newest');
+  
+  const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+
+  // We keep track of "applied" filters so that we don't refetch on every toggle inside the sheet,
+  // but rather only when the user clicks "Show Results" in the bottom sheet.
+  const [appliedFilters, setAppliedFilters] = useState({
+    genre: null as string | null,
+    focus: [] as string[],
+    sortBy: 'newest'
+  });
 
   const {
     data,
@@ -22,13 +30,14 @@ export default function BrowseRequestsScreen() {
     refetch,
     isRefetching
   } = useInfiniteQuery({
-    queryKey: ['feedbackRequests', selectedGenre, selectedFocus],
+    queryKey: ['feedbackRequests', appliedFilters.genre, appliedFilters.focus, appliedFilters.sortBy],
     queryFn: async ({ pageParam }) => {
       const res = await api.get('/feedback/open', {
         params: { 
           cursor: pageParam,
-          genre: selectedGenre || undefined,
-          focusAreas: selectedFocus.length > 0 ? selectedFocus.join(',') : undefined
+          genre: appliedFilters.genre || undefined,
+          focusAreas: appliedFilters.focus.length > 0 ? appliedFilters.focus.join(',') : undefined,
+          sortBy: appliedFilters.sortBy
         }
       });
       return res.data;
@@ -39,71 +48,69 @@ export default function BrowseRequestsScreen() {
 
   const requests = data ? data.pages.flatMap((p: any) => p.data) : [];
 
-  const toggleFocus = (focus: string) => {
-    setSelectedFocus(prev => 
-      prev.includes(focus) ? prev.filter(f => f !== focus) : [...prev, focus]
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      genre: selectedGenre,
+      focus: selectedFocus,
+      sortBy: sortBy
+    });
+    setIsFilterSheetVisible(false);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (appliedFilters.genre) count++;
+    count += appliedFilters.focus.length;
+    return count;
+  };
+
+  const renderActionBar = () => {
+    const activeCount = getActiveFilterCount();
+    return (
+      <View style={styles.actionBar}>
+        <Text style={styles.headerTitle}>Explore</Text>
+        <TouchableOpacity 
+          style={[styles.filterBtn, activeCount > 0 && styles.filterBtnActive]}
+          onPress={() => setIsFilterSheetVisible(true)}
+        >
+          <Ionicons name="options-outline" size={20} color={activeCount > 0 ? '#0284c7' : '#475569'} />
+          <Text style={[styles.filterBtnText, activeCount > 0 && styles.filterBtnTextActive]}>Filters</Text>
+          {activeCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     );
   };
 
-  const renderFilterBar = () => (
-    <View style={styles.filterContainer}>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={GENRES}
-        keyExtractor={item => item}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={[styles.chip, selectedGenre === item && styles.chipActive]}
-            onPress={() => setSelectedGenre(selectedGenre === item ? null : item)}
-          >
-            <Text style={[styles.chipText, selectedGenre === item && styles.chipTextActive]}>
-              {item.replace(/_/g, ' ')}
-            </Text>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.filterContent}
-      />
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={FOCUS_AREAS}
-        keyExtractor={item => item}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={[styles.chip, selectedFocus.includes(item) && styles.chipActiveFocus]}
-            onPress={() => toggleFocus(item)}
-          >
-            <Text style={[styles.chipText, selectedFocus.includes(item) && styles.chipTextActive]}>
-              {item}
-            </Text>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={[styles.filterContent, { marginTop: 8 }]}
-      />
-    </View>
-  );
-
   const renderRequestCard = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={() => router.push(`/feedback/${item.id}/give-feedback`)}
+      activeOpacity={0.8}
+    >
       <View style={styles.cardHeader}>
-        <View style={styles.authorBadge}>
-          <View style={styles.avatarMini}>
-            <Text style={styles.avatarMiniText}>{item.author?.displayName?.[0]?.toUpperCase() || 'A'}</Text>
+        <View style={styles.authorSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{item.author?.displayName?.[0]?.toUpperCase() || 'A'}</Text>
           </View>
-          <Text style={styles.authorName}>{item.author?.displayName || 'Anonymous'}</Text>
+          <View>
+            <Text style={styles.authorName}>{item.author?.displayName || 'Anonymous'}</Text>
+            <Text style={styles.timeAgo}>Just now</Text>
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusBadgeText}>Open</Text>
-          </View>
-          <Text style={styles.genreTag}>{item.genre?.replace(/_/g, ' ')}</Text>
+        <View style={styles.genreTag}>
+          <Text style={styles.genreTagText}>{item.genre?.replace(/_/g, ' ')}</Text>
         </View>
       </View>
       
       <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.excerpt} numberOfLines={4}>"{item.excerpt.substring(0, 150)}..."</Text>
+      
+      <Text style={styles.excerpt} numberOfLines={3}>
+        "{item.excerpt}"
+      </Text>
       
       <View style={styles.focusContainer}>
         {item.focusAreas.map((focus: string) => (
@@ -115,26 +122,24 @@ export default function BrowseRequestsScreen() {
       
       <View style={styles.cardFooter}>
         <View style={styles.stats}>
-          <Ionicons name="chatbubbles-outline" size={16} color="#64748b" />
+          <Ionicons name="chatbubble-outline" size={18} color="#94a3b8" />
           <Text style={styles.statsText}>{item._count?.responses || 0} responses</Text>
         </View>
         
-        <TouchableOpacity 
+        <View 
           style={[styles.giveFeedbackBtn, item.hasResponded && styles.giveFeedbackBtnDisabled]}
-          disabled={item.hasResponded}
-          onPress={() => router.push(`/feedback/${item.id}/give-feedback`)}
         >
-          <Text style={styles.giveFeedbackText}>
-            {item.hasResponded ? 'Responded' : 'Give Feedback'}
+          <Text style={[styles.giveFeedbackText, item.hasResponded && styles.giveFeedbackTextDisabled]}>
+            {item.hasResponded ? 'Reviewed' : 'Review'}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
-      {renderFilterBar()}
+      {renderActionBar()}
       
       <FlatList
         data={requests}
@@ -150,9 +155,24 @@ export default function BrowseRequestsScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyState}>
-              <Ionicons name="document-text-outline" size={48} color="#cbd5e1" />
-              <Text style={styles.emptyText}>No open feedback requests.</Text>
-              <Text style={styles.emptySubtext}>Check back soon or try changing filters.</Text>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="document-text-outline" size={48} color="#94a3b8" />
+              </View>
+              <Text style={styles.emptyText}>No requests found</Text>
+              <Text style={styles.emptySubtext}>Try adjusting your filters or check back later.</Text>
+              {getActiveFilterCount() > 0 && (
+                <TouchableOpacity 
+                  style={styles.clearFiltersBtn}
+                  onPress={() => {
+                    setSelectedGenre(null);
+                    setSelectedFocus([]);
+                    setSortBy('newest');
+                    setAppliedFilters({ genre: null, focus: [], sortBy: 'newest' });
+                  }}
+                >
+                  <Text style={styles.clearFiltersText}>Clear Filters</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <ActivityIndicator style={{ marginTop: 40 }} color="#8b5cf6" size="large" />
@@ -164,9 +184,20 @@ export default function BrowseRequestsScreen() {
         style={styles.fab}
         onPress={() => router.push('/feedback/submit')}
       >
-        <Ionicons name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Request Feedback</Text>
+        <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
+      <FeedbackFilterSheet
+        isVisible={isFilterSheetVisible}
+        onClose={() => setIsFilterSheetVisible(false)}
+        selectedGenre={selectedGenre}
+        setSelectedGenre={setSelectedGenre}
+        selectedFocus={selectedFocus}
+        setSelectedFocus={setSelectedFocus}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -176,39 +207,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  filterContainer: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  filterContent: {
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    gap: 8,
+    paddingVertical: 16,
+    backgroundColor: '#f8fafc',
   },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: -0.5,
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  chipActive: {
-    backgroundColor: '#e0e7ff',
-    borderColor: '#8b5cf6',
+  filterBtnActive: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#bae6fd',
   },
-  chipActiveFocus: {
-    backgroundColor: '#fce7f3',
-    borderColor: '#ec4899',
-  },
-  chipText: {
-    fontSize: 12,
+  filterBtnText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#64748b',
+    color: '#475569',
   },
-  chipTextActive: {
-    color: '#4f46e5',
+  filterBtnTextActive: {
+    color: '#0284c7',
+  },
+  filterBadge: {
+    backgroundColor: '#0284c7',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  filterBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
   },
   listContent: {
     padding: 16,
@@ -216,176 +269,187 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
     borderWidth: 1,
     borderColor: '#f1f5f9',
+    shadowColor: '#94a3b8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  authorBadge: {
+  authorSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  avatarMini: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#e0e7ff',
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarMiniText: {
-    fontSize: 12,
+  avatarText: {
+    fontSize: 16,
     fontWeight: '800',
-    color: '#4f46e5',
+    color: '#64748b',
   },
   authorName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  genreTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8b5cf6',
-    backgroundColor: '#f3f0ff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ecfdf5', // emerald-50
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#a7f3d0', // emerald-200
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981', // emerald-500
-    marginRight: 4,
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#059669', // emerald-600
-  },
-  title: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 8,
+    marginBottom: 2,
+  },
+  timeAgo: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  genreTag: {
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  genreTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 12,
+    letterSpacing: -0.5,
+    lineHeight: 28,
   },
   excerpt: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#475569',
-    lineHeight: 22,
-    fontStyle: 'italic',
-    marginBottom: 12,
+    lineHeight: 26,
+    marginBottom: 20,
   },
   focusContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 20,
   },
   focusTag: {
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#fdf2f8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   focusTagText: {
-    fontSize: 11,
-    color: '#64748b',
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#be185d',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    paddingTop: 12,
+    borderTopColor: '#f8fafc',
+    paddingTop: 16,
   },
   stats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   statsText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#64748b',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   giveFeedbackBtn: {
     backgroundColor: '#8b5cf6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
   },
   giveFeedbackBtnDisabled: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: '#f1f5f9',
   },
   giveFeedbackText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  giveFeedbackTextDisabled: {
+    color: '#94a3b8',
   },
   emptyState: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 80,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#475569',
-    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginTop: 8,
+    fontSize: 15,
+    color: '#64748b',
+    textAlign: 'center',
+    maxWidth: '80%',
+  },
+  clearFiltersBtn: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  clearFiltersText: {
+    color: '#0f172a',
+    fontWeight: '700',
+    fontSize: 15,
   },
   fab: {
     position: 'absolute',
     bottom: 24,
     right: 24,
     backgroundColor: '#8b5cf6',
-    flexDirection: 'row',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 28,
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    gap: 8,
-  },
-  fabText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   }
 });

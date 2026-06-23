@@ -108,7 +108,7 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
     >
       <KeyboardAvoidingView 
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => { Keyboard.dismiss(); onClose(); }} />
         
@@ -120,9 +120,6 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
             
             <View style={styles.header}>
               <Text style={styles.title}>Suggest a Prompt</Text>
-              <TouchableOpacity onPress={onClose} hitSlop={15} style={styles.closeBtn}>
-                <Ionicons name="close-circle" size={26} color="#9ca3af" />
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -175,22 +172,27 @@ export default function SuggestPromptModal({ isVisible, onClose }: SuggestPrompt
                   value={theme}
                   onChangeText={setTheme}
                   maxLength={50}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
               </View>
 
-              <Button 
-                title="Submit Prompt" 
-                onPress={handleSubmit} 
-                disabled={!isEnabled || isSubmitting}
-                loading={isSubmitting}
-                style={styles.submitBtn}
-              />
-              
               <Text style={styles.disclaimer}>
                 You can suggest up to 3 prompts per day. Prompts with 10 upvotes are automatically published.
               </Text>
 
             </ScrollView>
+          </View>
+
+          {/* Sticky Submit button — always above keyboard */}
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 8 }]}>
+            <Button 
+              title="Submit Prompt" 
+              onPress={handleSubmit} 
+              disabled={!isEnabled || isSubmitting}
+              loading={isSubmitting}
+              style={styles.submitBtn}
+            />
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -262,7 +264,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    paddingBottom: 60,
+    paddingBottom: 24,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
   },
   field: {
     marginBottom: 28,

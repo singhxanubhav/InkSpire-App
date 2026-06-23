@@ -41,7 +41,7 @@ export function WriterProfileSheet({
 
   if (!writer) return null;
 
-  const displayAvatar = writer.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${writer.id}`;
+  const displayAvatar = writer.avatar || `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(writer.displayName || 'U')}&backgroundColor=6366f1&textColor=ffffff&fontSize=40`;
 
   return (
     <BottomSheet
@@ -55,11 +55,6 @@ export function WriterProfileSheet({
       backgroundStyle={{ backgroundColor: '#ffffff', borderRadius: 24 }}
     >
       <BottomSheetScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.closeBtn}>
-            <Ionicons name="close" size={24} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.profileInfo}>
           <Image source={{ uri: displayAvatar }} style={styles.avatar} />

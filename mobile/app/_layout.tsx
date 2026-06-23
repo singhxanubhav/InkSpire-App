@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -5,9 +6,10 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { LogBox } from 'react-native';
+import { LogBox, View, StyleSheet } from 'react-native';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { NetworkBanner } from '../components/ui/NetworkBanner';
+import { AnimatedSplashScreen } from '../components/ui/AnimatedSplashScreen';
 import '../global.css';
 
 const queryClient = new QueryClient();
@@ -19,17 +21,33 @@ LogBox.ignoreLogs([
 ]);
 
 export default function RootLayout() {
+  const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
           <ErrorBoundary>
-            <NetworkBanner />
-            <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" options={{ title: 'InkSpire' }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
+            <View style={StyleSheet.absoluteFill}>
+              <NetworkBanner />
+              <StatusBar style="auto" />
+              <Stack screenOptions={{ 
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
+              }}>
+                <Stack.Screen name="index" options={{ title: 'InkSpire', animation: 'fade' }} />
+                <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+              </Stack>
+              
+              {!splashAnimationFinished && (
+                <AnimatedSplashScreen 
+                  onAnimationComplete={() => setSplashAnimationFinished(true)} 
+                />
+              )}
+            </View>
           </ErrorBoundary>
         </BottomSheetModalProvider>
       </QueryClientProvider>

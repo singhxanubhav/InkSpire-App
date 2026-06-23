@@ -13,10 +13,11 @@ export class FeedbackController {
 
   static async getOpenRequests(req: Request, res: Response) {
     try {
-      const { cursor, genre, focusAreas } = req.query;
+      const { cursor, genre, focusAreas, sortBy } = req.query;
       const filters = {
         genre: genre as string,
-        focusAreas: focusAreas ? (focusAreas as string).split(',') : []
+        focusAreas: focusAreas ? (focusAreas as string).split(',') : [],
+        sortBy: sortBy as string
       };
       const result = await FeedbackService.getOpenRequests(req.user!.id, filters, cursor as string);
       res.json({ status: 'success', data: result.data, nextCursor: result.nextCursor });

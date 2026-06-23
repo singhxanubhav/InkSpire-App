@@ -20,7 +20,7 @@ export default function PartnerInfo({ matchId, partner }: PartnerInfoProps) {
 
   if (!partner) return null;
 
-  const displayAvatar = partner.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${partner.id}`;
+  const displayAvatar = partner.avatar || `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(partner.displayName || 'U')}&backgroundColor=6366f1&textColor=ffffff&fontSize=40`;
 
   const handleUnmatch = async () => {
     setIsUnmatching(true);

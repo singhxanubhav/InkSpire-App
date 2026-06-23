@@ -44,6 +44,9 @@ model User {
   feedbackResponses FeedbackResponse[]
   writingLogs      WritingLog[]
   eventParticipations EventParticipant[]
+
+  @@index([email])
+  @@index([displayName])
 }
 
 enum Role {
@@ -131,6 +134,7 @@ model Match {
   ideas       Idea[]
 
   @@unique([requesterId, receiveeId])
+  @@index([requesterId, receiveeId])
 }
 
 enum NotificationType {
@@ -307,6 +311,7 @@ model WritingLog {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, projectName])
+  @@index([userId, date])
 }
 
 enum EventType {

@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Modal, Animated, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Keyboard, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, Animated, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
 import { useAuthStore } from '../../../store/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ConfirmModal } from '../../ui/ConfirmModal';
 
 interface CommentThreadProps {
   isVisible: boolean;
@@ -14,6 +15,7 @@ interface CommentThreadProps {
 
 export default function CommentThread({ isVisible, submissionId, onClose }: CommentThreadProps) {
   const [content, setContent] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
   const insets = useSafeAreaInsets();
@@ -136,15 +138,7 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
 
   const handleLongPress = (comment: any) => {
     if (comment.authorId !== user?.id) return;
-    
-    Alert.alert(
-      "Delete Comment",
-      "Are you sure you want to delete this comment?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteCommentMutation.mutate(comment.id) }
-      ]
-    );
+    setDeleteTargetId(comment.id);
   };
 
   const renderComment = ({ item }: { item: any }) => {
@@ -168,15 +162,16 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
   };
 
   return (
-    <Modal
-      visible={isVisible}
+    <>
+      <Modal
+        visible={isVisible}
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView 
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => { Keyboard.dismiss(); onClose(); }} />
         
@@ -188,9 +183,6 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
 
             <View style={styles.header}>
               <Text style={styles.title}>Comments</Text>
-              <TouchableOpacity onPress={onClose} hitSlop={15} style={styles.closeBtn}>
-                <Ionicons name="close-circle" size={26} color="#9ca3af" />
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -217,7 +209,7 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
             )}
           </View>
 
-          <View style={styles.inputArea}>
+          <View style={[styles.inputArea, { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }]}>
             <TextInput
               style={styles.input}
               placeholder="Add a comment..."
@@ -226,6 +218,9 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
               onChangeText={setContent}
               multiline
               maxLength={500}
+              returnKeyType="send"
+              blurOnSubmit
+              onSubmitEditing={handleSend}
             />
             <TouchableOpacity 
               style={[styles.sendBtn, !content.trim() && styles.sendBtnDisabled]}
@@ -238,6 +233,21 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
+
+    <ConfirmModal
+      visible={!!deleteTargetId}
+      title="Delete Comment"
+      message="Are you sure you want to delete this comment?"
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      variant="danger"
+      onConfirm={() => {
+        if (deleteTargetId) deleteCommentMutation.mutate(deleteTargetId);
+        setDeleteTargetId(null);
+      }}
+      onCancel={() => setDeleteTargetId(null)}
+      />
+    </>
   );
 }
 

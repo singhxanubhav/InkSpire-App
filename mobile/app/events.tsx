@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { EventCard } from '../components/features/events/EventCard';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { BackButton } from '../components/ui/BackButton';
 
 export default function EventsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -44,6 +45,7 @@ export default function EventsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <BackButton style={{ marginBottom: 12 }} />
         <Text style={styles.headerTitle}>Events & Sprints</Text>
       </View>
 

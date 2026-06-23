@@ -1,5 +1,15 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
+import React, { useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Animated,
+} from 'react-native';
+import { GestureHandlerRootView, PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -18,11 +28,13 @@ interface ActionModalProps {
 }
 
 export function ActionModal({ visible, title, options, onClose }: ActionModalProps) {
-  const slideAnim = React.useRef(new Animated.Value(300)).current;
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
+      slideAnim.setValue(400);
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -37,45 +49,100 @@ export function ActionModal({ visible, title, options, onClose }: ActionModalPro
         }),
       ]).start();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 300,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
     }
   }, [visible]);
 
+  const animateClose = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onClose());
+  }, [onClose]);
+
+  const onGestureEvent = Animated.event(
+    [{ nativeEvent: { translationY: slideAnim } }],
+    { useNativeDriver: true }
+  );
+
+  const onHandlerStateChange = useCallback(
+    (event: PanGestureHandlerGestureEvent) => {
+      const { translationY, velocityY, state } = event.nativeEvent;
+      // state 5 = GESTURE END
+      if (state === 5) {
+        if (translationY > 100 || velocityY > 600) {
+          animateClose();
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+          }).start();
+        }
+      }
+    },
+    [animateClose]
+  );
+
   if (!visible) return null;
 
+  // Bottom padding accounts for safe area (home indicator on iOS, gesture bar on Android)
+  // so the sheet content never sits behind the bottom navbar
+  const bottomPadding = Math.max(insets.bottom, 8) + 16;
+
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-          <TouchableWithoutFeedback>
-            <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={animateClose}
+    >
+      {/*
+        GestureHandlerRootView MUST be inside Modal on mobile (Android/iOS),
+        because Modal renders in a new React root, outside the app's GestureHandlerRootView.
+        statusBarTranslucent ensures the overlay covers the full screen on Android.
+      */}
+      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+        {/* Full-screen backdrop — covers everything including bottom navbar */}
+        <TouchableWithoutFeedback onPress={animateClose}>
+          <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} />
+        </TouchableWithoutFeedback>
+
+        {/* Sheet anchored to very bottom of screen */}
+        <Animated.View style={[styles.sheetWrapper, { transform: [{ translateY: slideAnim }] }]}>
+          <PanGestureHandler
+            onGestureEvent={onGestureEvent}
+            onHandlerStateChange={onHandlerStateChange}
+            activeOffsetY={10}
+            failOffsetY={-5}
+          >
+            <Animated.View style={[styles.container, { paddingBottom: bottomPadding }]}>
               <View style={styles.dragHandle} />
-              
+
               {title && <Text style={styles.title}>{title}</Text>}
-              
+
               <View style={styles.optionsContainer}>
                 {options.map((option, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={[styles.optionButton, index < options.length - 1 && styles.borderBottom]}
+                    style={[
+                      styles.optionButton,
+                      index < options.length - 1 && styles.borderBottom,
+                    ]}
                     activeOpacity={0.7}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      onClose();
-                      // Slight delay to allow modal to close before action
-                      setTimeout(option.onPress, 100);
+                      animateClose();
+                      setTimeout(option.onPress, 200);
                     }}
                   >
                     {option.icon && (
@@ -92,30 +159,30 @@ export function ActionModal({ visible, title, options, onClose }: ActionModalPro
                   </TouchableOpacity>
                 ))}
               </View>
-
-              <TouchableOpacity style={styles.cancelButton} activeOpacity={0.7} onPress={onClose}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
             </Animated.View>
-          </TouchableWithoutFeedback>
+          </PanGestureHandler>
         </Animated.View>
-      </TouchableWithoutFeedback>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-end',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  sheetWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   container: {
     backgroundColor: '#f3f4f6',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingBottom: 32, // for safe area
     paddingTop: 12,
   },
   dragHandle: {
@@ -137,7 +204,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 16,
   },
   optionButton: {
     flexDirection: 'row',
@@ -160,16 +226,5 @@ const styles = StyleSheet.create({
   },
   destructiveText: {
     color: '#ef4444',
-  },
-  cancelButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#4f46e5',
   },
 });

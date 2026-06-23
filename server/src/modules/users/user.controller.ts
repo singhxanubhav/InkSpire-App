@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from './user.service';
 import { UpdateProfileSchema } from './user.schema';
+import cloudinary from '../../config/cloudinary';
 
 export class UserController {
   static async getMe(req: Request, res: Response) {
@@ -52,8 +53,22 @@ export class UserController {
   static async uploadAvatar(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const mockAvatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
-      const user = await UserService.updateProfile(userId, { avatar: mockAvatarUrl } as any);
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Convert multer buffer to base64 data URI for Cloudinary upload
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: 'inkspire/avatars',
+        public_id: `avatar_${userId}`,
+        overwrite: true,
+      });
+
+      const user = await UserService.updateProfile(userId, { avatar: uploadResult.secure_url } as any);
       res.json(user);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

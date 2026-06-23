@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import * as Haptics from 'expo-haptics';
+import { Toast } from '../../components/ui/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const GENRES = ['FANTASY', 'SCI_FI', 'ROMANCE', 'MYSTERY', 'THRILLER', 'HORROR', 'LITERARY_FICTION', 'HISTORICAL_FICTION', 'NON_FICTION', 'POETRY', 'OTHER'];
 const FOCUS_AREAS = ['CLARITY', 'PACING', 'DIALOGUE', 'STRUCTURE', 'VOICE', 'CHARACTER'];
-const MAX_WORDS = 1000;
 
 export default function SubmitRequestScreen() {
   const [title, setTitle] = useState('');
@@ -15,11 +16,12 @@ export default function SubmitRequestScreen() {
   const [excerpt, setExcerpt] = useState('');
   const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [context, setContext] = useState('');
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'error' as 'success'|'error'|'info' });
   
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const wordCount = excerpt.trim() ? excerpt.trim().split(/\s+/).length : 0;
-  const isFormValid = true;
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -29,7 +31,10 @@ export default function SubmitRequestScreen() {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ['feedbackRequests'] });
-      router.replace('/feedback'); // Go back to browse, ideally toast here
+      router.replace('/feedback');
+    },
+    onError: (err: any) => {
+      setToast({ visible: true, message: err.response?.data?.message || err.message || 'Failed to submit request', type: 'error' });
     }
   });
 
@@ -40,98 +45,123 @@ export default function SubmitRequestScreen() {
   };
 
   const handleSubmit = () => {
-    // if (!isFormValid) return;
-    mutation.mutate({
-      title,
-      genre,
-      excerpt,
-      focusAreas,
-      context
-    });
+    Keyboard.dismiss();
+    mutation.mutate({ title, genre, excerpt, focusAreas, context });
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        <Text style={styles.label}>Title</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="What is this piece called?"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text style={styles.label}>Genre</Text>
-        <View style={styles.chipContainer}>
-          {GENRES.map(g => (
-            <TouchableOpacity 
-              key={g} 
-              style={[styles.chip, genre === g && styles.chipActive]}
-              onPress={() => setGenre(g)}
-            >
-              <Text style={[styles.chipText, genre === g && styles.chipTextActive]}>
-                {g.replace(/_/g, ' ')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>Excerpt</Text>
-        </View>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Paste your text here..."
-          multiline
-          value={excerpt}
-          onChangeText={setExcerpt}
-          textAlignVertical="top"
-        />
-
-        <Text style={styles.label}>What should reviewers focus on? (Select at least 1)</Text>
-        <View style={styles.chipContainer}>
-          {FOCUS_AREAS.map(f => (
-            <TouchableOpacity 
-              key={f} 
-              style={[styles.chip, focusAreas.includes(f) && styles.chipActive]}
-              onPress={() => toggleFocus(f)}
-            >
-              <Text style={[styles.chipText, focusAreas.includes(f) && styles.chipTextActive]}>
-                {f}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Additional Context (Optional)</Text>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
-          placeholder="Any specific questions? E.g., 'Does the ending feel rushed?'"
-          multiline
-          value={context}
-          onChangeText={setContext}
-          textAlignVertical="top"
-        />
-
-        <TouchableOpacity 
-          style={[styles.submitBtn, !isFormValid && styles.submitBtnDisabled]}
-          disabled={!isFormValid || mutation.isPending}
-          onPress={handleSubmit}
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      >
+        {/* Scrollable form content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
-          {mutation.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.submitBtnText}>Submit for Feedback</Text>
-          )}
-        </TouchableOpacity>
+          <Text style={styles.label}>Title</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="What is this piece called?"
+            placeholderTextColor="#94a3b8"
+            value={title}
+            onChangeText={setTitle}
+            returnKeyType="next"
+          />
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.label}>Genre</Text>
+          <View style={styles.chipContainer}>
+            {GENRES.map(g => (
+              <TouchableOpacity 
+                key={g} 
+                style={[styles.chip, genre === g && styles.chipActive]}
+                onPress={() => setGenre(g)}
+              >
+                <Text style={[styles.chipText, genre === g && styles.chipTextActive]}>
+                  {g.replace(/_/g, ' ')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Excerpt</Text>
+            <Text style={[styles.wordCount, wordCount > 1000 && styles.wordCountError]}>
+              {wordCount} / 1000 words
+            </Text>
+          </View>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Paste your text here..."
+            placeholderTextColor="#94a3b8"
+            multiline
+            value={excerpt}
+            onChangeText={setExcerpt}
+            textAlignVertical="top"
+          />
+
+          <Text style={styles.label}>What should reviewers focus on? (Select at least 1)</Text>
+          <View style={styles.chipContainer}>
+            {FOCUS_AREAS.map(f => (
+              <TouchableOpacity 
+                key={f} 
+                style={[styles.chip, focusAreas.includes(f) && styles.chipActive]}
+                onPress={() => toggleFocus(f)}
+              >
+                <Text style={[styles.chipText, focusAreas.includes(f) && styles.chipTextActive]}>
+                  {f}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Additional Context (Optional)</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            placeholder="Any specific questions? E.g., 'Does the ending feel rushed?'"
+            placeholderTextColor="#94a3b8"
+            multiline
+            value={context}
+            onChangeText={setContext}
+            textAlignVertical="top"
+            returnKeyType="done"
+            onSubmitEditing={Keyboard.dismiss}
+          />
+
+          {/* Bottom padding so last field isn't hidden on short screens */}
+          <View style={{ height: 16 }} />
+        </ScrollView>
+
+        {/* Sticky Submit Button — always above keyboard */}
+        <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + 12 }]}>
+          <TouchableOpacity
+            style={[styles.submitBtn, mutation.isPending && styles.submitBtnDisabled]}
+            disabled={mutation.isPending}
+            onPress={handleSubmit}
+          >
+            {mutation.isPending ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ActivityIndicator color="#fff" />
+                <Text style={styles.submitBtnText}>Submitting...</Text>
+              </View>
+            ) : (
+              <Text style={styles.submitBtnText}>Submit for Feedback</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))}
+      />
+    </>
   );
 }
 
@@ -142,7 +172,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 8,
   },
   labelRow: {
     flexDirection: 'row',
@@ -175,10 +205,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
   },
-  inputError: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
-  },
   textArea: {
     height: 200,
   },
@@ -208,12 +234,18 @@ const styles = StyleSheet.create({
     color: '#4f46e5',
     fontWeight: '600',
   },
+  stickyFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
   submitBtn: {
     backgroundColor: '#8b5cf6',
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 32,
     shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

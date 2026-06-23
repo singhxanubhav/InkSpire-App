@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { ActionModal } from '../../ui/ActionModal';
 import { Toast } from '../../ui/Toast';
+import { api } from '../../../services/api';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -70,22 +71,13 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUpload
         type: 'image/jpeg',
       } as any);
 
-      // We'll mock the upload call here and assume our parent provides the auth token
-      // In a real app we would use an interceptor or pass it down
-      const response = await fetch('http://localhost:3000/api/users/avatar', {
-        method: 'POST',
-        body: formData,
+      const response = await api.post('/users/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const data = await response.json();
-      onUploadSuccess(data.avatar || uri); // fallback to uri if backend mocks it
+      onUploadSuccess(response.data.avatar || uri); 
     } catch (error) {
       setToast({ visible: true, message: 'Failed to upload image. Please try again.', type: 'error' });
       setLocalUri(null); // Revert optimistic UI
@@ -94,7 +86,7 @@ export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUpload
     }
   };
 
-  const displayUri = localUri || currentAvatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
+  const displayUri = localUri || currentAvatarUrl || `https://api.dicebear.com/7.x/initials/png?seed=U&backgroundColor=6366f1&textColor=ffffff&fontSize=40`;
 
   return (
     <View style={styles.container}>
@@ -134,7 +126,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
   },
   imageContainer: {
     position: 'relative',

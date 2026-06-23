@@ -10,6 +10,17 @@ const server = http.createServer(app);
 // Initialize Socket.io
 initializeSocket(server);
 
+// Global error handlers for production stability
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION:', reason);
+  // In production, we might want to shut down gracefully here
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', error);
+  process.exit(1);
+});
+
 const startServer = async () => {
   try {
     // Check DB connection

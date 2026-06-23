@@ -7,25 +7,47 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'dark',
+  userInterfaceStyle: 'light',
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#0f0f1a'
+    backgroundColor: '#ffffff'
   },
   assetBundlePatterns: [
     '**/*'
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.inkspire.app'
+    bundleIdentifier: 'com.inkspire.app',
+    infoPlist: {
+      NSCameraUsageDescription: "Take a profile photo directly from the app.",
+      NSPhotoLibraryUsageDescription: "Select a profile photo from your library.",
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults",
+          NSPrivacyAccessedAPITypeReasons: ["CA92.1"]
+        }
+      ]
+    }
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#0f0f1a'
+      backgroundColor: '#ffffff'
     },
-    package: 'com.inkspire.app'
+    package: 'com.inkspire.app',
+    permissions: [
+      "CAMERA",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE"
+    ]
+  },
+  updates: {
+    url: "https://u.expo.dev/" + (process.env.EXPO_PROJECT_ID || "dummy-project-id"),
+    fallbackToCacheTimeout: 0
+  },
+  runtimeVersion: {
+    policy: "appVersion"
   },
   web: {
     favicon: './assets/favicon.png'

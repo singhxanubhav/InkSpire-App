@@ -72,12 +72,12 @@ export default function MatchRequestsScreen() {
     
     if (!profile) return null;
     
-    const displayAvatar = profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`;
+    const displayAvatar = profile.avatar || `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(profile.displayName || 'U')}&backgroundColor=6366f1&textColor=ffffff&fontSize=40`;
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Image source={{ uri: displayAvatar }} style={styles.avatar} />
+          <Image source={{ uri: displayAvatar }} style={styles.avatar} onError={() => {}} />
           <View style={styles.cardInfo}>
             <Text style={styles.name}>{profile.displayName}</Text>
             {profile.experienceLevel && (

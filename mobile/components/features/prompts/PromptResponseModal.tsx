@@ -104,7 +104,7 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
     >
       <KeyboardAvoidingView 
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => { Keyboard.dismiss(); onClose(); }} />
         
@@ -115,12 +115,7 @@ export default function PromptResponseModal({ isVisible, prompt, onClose }: Prom
             </View>
 
             <View style={styles.header}>
-              <View style={styles.headerLeft}>
-                <TouchableOpacity onPress={onClose} hitSlop={15} style={styles.closeBtn}>
-                  <Ionicons name="close-circle" size={26} color="#9ca3af" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Write Response</Text>
-              </View>
+              <Text style={styles.title}>Write Response</Text>
               <Button 
                 title="Publish" 
                 onPress={handlePublish} 
@@ -216,14 +211,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   closeBtn: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 16,
+    display: 'none', // kept for TS compatibility, no longer shown
+  },
+  headerLeft: {
+    display: 'none',
   },
   title: {
     fontSize: 20,

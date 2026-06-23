@@ -1,8 +1,13 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, PanResponder, Animated } from 'react-native';
+import {
+  View, Text, StyleSheet, TextInput, TouchableOpacity,
+  ActivityIndicator, Modal, KeyboardAvoidingView, Platform,
+  TouchableWithoutFeedback, Keyboard, PanResponder, Animated, ScrollView
+} from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface LogWordsModalProps {
   onClose: () => void;
@@ -17,6 +22,7 @@ export const LogWordsModal = forwardRef<any, LogWordsModalProps>(
   const [notes, setNotes] = useState('');
   
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const panY = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(
@@ -29,6 +35,7 @@ export const LogWordsModal = forwardRef<any, LogWordsModalProps>(
       },
       onPanResponderRelease: (e, gestureState) => {
         if (gestureState.dy > 100) {
+          Keyboard.dismiss();
           Animated.timing(panY, {
             toValue: 800,
             duration: 200,
@@ -94,77 +101,94 @@ export const LogWordsModal = forwardRef<any, LogWordsModalProps>(
         onClose();
       }}
     >
-      <KeyboardAvoidingView 
-        style={styles.overlay} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      {/* KAV wraps the entire modal content so it pushes up on iOS */}
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        {/* Backdrop tap = close */}
         <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsVisible(false); onClose(); }}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        
-        <Animated.View 
-          style={[styles.bottomSheet, { transform: [{ translateY: panY }] }]}
-          {...panResponder.panHandlers}
-        >
-          <View style={styles.indicatorContainer}>
-            <View style={styles.indicator} />
-          </View>
-          
-          <Text style={styles.title}>Log Today's Words</Text>
-          
-          {initialWordCount > 0 && (
-            <View style={styles.alertBox}>
-              <Text style={styles.alertText}>You've already logged {initialWordCount} words today. Enter your new total.</Text>
+
+        {/* Bottom sheet: drag handle is excluded from KAV so it always stays put */}
+        <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: panY }] }]}>
+          {/* Drag handle — pan responder only here so text inputs don't get hijacked */}
+          <View {...panResponder.panHandlers}>
+            <View style={styles.indicatorContainer}>
+              <View style={styles.indicator} />
             </View>
-          )}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Total Words</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              value={wordCount}
-              onChangeText={setWordCount}
-              placeholder="e.g. 500"
-              placeholderTextColor="#94a3b8"
-            />
+            <Text style={styles.title}>Log Today's Words</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Project Name (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={projectName}
-              onChangeText={setProjectName}
-              placeholder="e.g. The Great Novel"
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="How did the session go?"
-              placeholderTextColor="#94a3b8"
-              multiline
-              numberOfLines={2}
-            />
-          </View>
-
-          <TouchableOpacity 
-            style={styles.submitBtn} 
-            onPress={() => mutate()}
-            disabled={isPending || !wordCount}
+          {/* Scrollable content ensures fields are reachable on very short screens */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
           >
-            {isPending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitBtnText}>Save Progress</Text>
+            {initialWordCount > 0 && (
+              <View style={styles.alertBox}>
+                <Text style={styles.alertText}>You've already logged {initialWordCount} words today. Enter your new total.</Text>
+              </View>
             )}
-          </TouchableOpacity>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Total Words</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                value={wordCount}
+                onChangeText={setWordCount}
+                placeholder="e.g. 500"
+                placeholderTextColor="#94a3b8"
+                returnKeyType="next"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Project Name (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={projectName}
+                onChangeText={setProjectName}
+                placeholder="e.g. The Great Novel"
+                placeholderTextColor="#94a3b8"
+                returnKeyType="next"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Notes (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="How did the session go?"
+                placeholderTextColor="#94a3b8"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
+              />
+            </View>
+          </ScrollView>
+
+          {/* Save button lives OUTSIDE the scroll — always visible above keyboard */}
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 8 }]}>
+            <TouchableOpacity
+              style={[styles.submitBtn, (!wordCount || isPending) && styles.submitBtnDisabled]}
+              onPress={() => { Keyboard.dismiss(); mutate(); }}
+              disabled={isPending || !wordCount}
+            >
+              {isPending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitBtnText}>Save Progress</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
@@ -184,13 +208,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    paddingTop: 12,
+    paddingTop: 0,
     maxHeight: '90%',
   },
   indicatorContainer: {
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   indicator: {
     width: 40,
@@ -202,8 +226,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#0f172a',
-    marginBottom: 20,
+    marginBottom: 16,
     textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
   },
   alertBox: {
     backgroundColor: '#eff6ff',
@@ -238,14 +267,29 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    backgroundColor: '#fff',
   },
   submitBtn: {
     backgroundColor: '#8b5cf6',
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 8,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitBtnDisabled: {
+    backgroundColor: '#cbd5e1',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitBtnText: {
     color: '#fff',

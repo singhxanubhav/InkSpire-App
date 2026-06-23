@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
 import * as Haptics from 'expo-haptics';
 import { RubricSlider } from '../../../components/features/feedback/RubricSlider';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
+import { Toast } from '../../../components/ui/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function GiveFeedbackScreen() {
   const { id } = useLocalSearchParams();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const [overallImpression, setOverallImpression] = useState('');
   const [clarityScore, setClarityScore] = useState(3);
@@ -16,6 +20,8 @@ export default function GiveFeedbackScreen() {
   const [dialogueScore, setDialogueScore] = useState(3);
   const [structureScore, setStructureScore] = useState(3);
   const [detailedNotes, setDetailedNotes] = useState('');
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'error' as 'success'|'error'|'info' });
 
   const { data: request, isLoading } = useQuery({
     queryKey: ['feedbackRequest', id],
@@ -24,11 +30,6 @@ export default function GiveFeedbackScreen() {
       return res.data.data;
     }
   });
-
-  const overallWordCount = overallImpression.trim() ? overallImpression.trim().split(/\s+/).length : 0;
-  const detailedWordCount = detailedNotes.trim() ? detailedNotes.trim().split(/\s+/).length : 0;
-
-  const isFormValid = true;
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -42,34 +43,25 @@ export default function GiveFeedbackScreen() {
       router.back();
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to submit feedback');
+      setToast({ visible: true, message: err.response?.data?.message || err.message || 'Failed to submit feedback', type: 'error' });
     }
   });
 
   const handleSubmit = () => {
-    // if (!isFormValid) return;
-    
-    Alert.alert(
-      'Submit Feedback',
-      'Are you sure you want to submit? This cannot be edited later.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Submit', 
-          style: 'default',
-          onPress: () => {
-            mutation.mutate({
-              overallImpression,
-              clarityScore,
-              pacingScore,
-              dialogueScore,
-              structureScore,
-              detailedNotes
-            });
-          }
-        }
-      ]
-    );
+    Keyboard.dismiss();
+    setShowSubmitConfirm(true);
+  };
+
+  const confirmSubmit = () => {
+    setShowSubmitConfirm(false);
+    mutation.mutate({
+      overallImpression,
+      clarityScore,
+      pacingScore,
+      dialogueScore,
+      structureScore,
+      detailedNotes
+    });
   };
 
   if (isLoading || !request) {
@@ -81,85 +73,113 @@ export default function GiveFeedbackScreen() {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Original Excerpt Display */}
-        <View style={styles.excerptCard}>
-          <Text style={styles.excerptTitle}>{request.title}</Text>
-          <Text style={styles.excerptText}>{request.excerpt}</Text>
-          
-          {request.context && (
-            <View style={styles.contextBox}>
-              <Text style={styles.contextTitle}>Author's Note:</Text>
-              <Text style={styles.contextText}>{request.context}</Text>
-            </View>
-          )}
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      >
+        {/* Scrollable form content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          {/* Original Excerpt Display */}
+          <View style={styles.excerptCard}>
+            <Text style={styles.excerptTitle}>{request.title}</Text>
+            <Text style={styles.excerptText}>{request.excerpt}</Text>
+            
+            {request.context && (
+              <View style={styles.contextBox}>
+                <Text style={styles.contextTitle}>Author's Note:</Text>
+                <Text style={styles.contextText}>{request.context}</Text>
+              </View>
+            )}
 
-          <View style={styles.focusContainer}>
-            <Text style={styles.focusLabel}>Requested Focus:</Text>
-            <View style={styles.focusRow}>
-              {request.focusAreas.map((focus: string) => (
-                <View key={focus} style={styles.focusTag}>
-                  <Text style={styles.focusTagText}>{focus}</Text>
-                </View>
-              ))}
+            <View style={styles.focusContainer}>
+              <Text style={styles.focusLabel}>Requested Focus:</Text>
+              <View style={styles.focusRow}>
+                {request.focusAreas.map((focus: string) => (
+                  <View key={focus} style={styles.focusTag}>
+                    <Text style={styles.focusTagText}>{focus}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
-        </View>
 
-        <Text style={styles.sectionTitle}>Your Critique</Text>
+          <Text style={styles.sectionTitle}>Your Critique</Text>
 
-        <View style={styles.labelRow}>
           <Text style={styles.label}>Overall Impression</Text>
-        </View>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="What are your high-level thoughts on this piece?"
-          multiline
-          value={overallImpression}
-          onChangeText={setOverallImpression}
-          textAlignVertical="top"
-        />
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="What are your high-level thoughts on this piece?"
+            placeholderTextColor="#94a3b8"
+            multiline
+            value={overallImpression}
+            onChangeText={setOverallImpression}
+            textAlignVertical="top"
+          />
 
-        <View style={styles.rubricContainer}>
-          <Text style={styles.label}>Detailed Rubric</Text>
-          <RubricSlider label="Clarity" value={clarityScore} onValueChange={setClarityScore} />
-          <RubricSlider label="Pacing" value={pacingScore} onValueChange={setPacingScore} />
-          <RubricSlider label="Dialogue" value={dialogueScore} onValueChange={setDialogueScore} />
-          <RubricSlider label="Structure" value={structureScore} onValueChange={setStructureScore} />
-        </View>
+          <View style={styles.rubricContainer}>
+            <Text style={styles.label}>Detailed Rubric</Text>
+            <RubricSlider label="Clarity" value={clarityScore} onValueChange={setClarityScore} />
+            <RubricSlider label="Pacing" value={pacingScore} onValueChange={setPacingScore} />
+            <RubricSlider label="Dialogue" value={dialogueScore} onValueChange={setDialogueScore} />
+            <RubricSlider label="Structure" value={structureScore} onValueChange={setStructureScore} />
+          </View>
 
-        <View style={styles.labelRow}>
           <Text style={styles.label}>Detailed Notes</Text>
+          <TextInput
+            style={[styles.input, styles.textArea, { height: 200 }]}
+            placeholder="Break down your feedback based on the rubric scores and requested focus areas..."
+            placeholderTextColor="#94a3b8"
+            multiline
+            value={detailedNotes}
+            onChangeText={setDetailedNotes}
+            textAlignVertical="top"
+          />
+
+          {/* Bottom breathing room so last field isn't obscured */}
+          <View style={{ height: 16 }} />
+        </ScrollView>
+
+        {/* Sticky Submit Button — always above keyboard */}
+        <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + 12 }]}>
+          <TouchableOpacity
+            style={[styles.submitBtn, mutation.isPending && styles.submitBtnDisabled]}
+            disabled={mutation.isPending}
+            onPress={handleSubmit}
+          >
+            {mutation.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitBtnText}>Submit Feedback</Text>
+            )}
+          </TouchableOpacity>
         </View>
-        <TextInput
-          style={[styles.input, styles.textArea, { height: 200 }]}
-          placeholder="Break down your feedback based on the rubric scores and requested focus areas..."
-          multiline
-          value={detailedNotes}
-          onChangeText={setDetailedNotes}
-          textAlignVertical="top"
-        />
+      </KeyboardAvoidingView>
 
-        <TouchableOpacity 
-          style={[styles.submitBtn, !isFormValid && styles.submitBtnDisabled]}
-          disabled={!isFormValid || mutation.isPending}
-          onPress={handleSubmit}
-        >
-          {mutation.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.submitBtnText}>Submit Feedback</Text>
-          )}
-        </TouchableOpacity>
+      <ConfirmModal
+        visible={showSubmitConfirm}
+        title="Submit Feedback"
+        message="Are you sure you want to submit? This cannot be edited later."
+        confirmLabel="Submit"
+        cancelLabel="Cancel"
+        variant="success"
+        onConfirm={confirmSubmit}
+        onCancel={() => setShowSubmitConfirm(false)}
+      />
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast(prev => ({ ...prev, visible: false }))}
+      />
+    </>
   );
 }
 
@@ -170,7 +190,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 8,
   },
   excerptCard: {
     backgroundColor: '#fff',
@@ -198,11 +218,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   contextBox: {
-    backgroundColor: '#fffbeb', // amber-50
+    backgroundColor: '#fffbeb',
     padding: 12,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b', // amber-500
+    borderLeftColor: '#f59e0b',
     marginBottom: 16,
   },
   contextTitle: {
@@ -249,25 +269,12 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginBottom: 16,
   },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginTop: 8,
-    marginBottom: 8,
-  },
   label: {
     fontSize: 15,
     fontWeight: '600',
     color: '#334155',
-  },
-  wordCount: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  wordCountError: {
-    color: '#ef4444',
+    marginBottom: 8,
+    marginTop: 8,
   },
   input: {
     backgroundColor: '#fff',
@@ -290,12 +297,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  stickyFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
   submitBtn: {
     backgroundColor: '#8b5cf6',
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
-    marginTop: 16,
     shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -54,8 +55,8 @@ apiRouter.get('/health', (req, res) => {
 // Specific rate limiters
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { success: false, error: { message: 'Too many auth requests' } } });
 const matchesLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, message: { success: false, error: { message: 'Match request limit reached' } } });
-const feedbackLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 5, message: { success: false, error: { message: 'Daily feedback limit reached' } } });
-const promptsLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 3, message: { success: false, error: { message: 'Daily prompt submission limit reached' } } });
+const feedbackLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 100, message: { success: false, error: { message: 'Daily feedback limit reached' } } });
+const promptsLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 100, message: { success: false, error: { message: 'Daily prompt submission limit reached' } } });
 
 apiRouter.use('/auth', authLimiter, authRouter);
 apiRouter.use('/users', userRouter);
@@ -76,12 +77,31 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    error: {
-      message: err.message || 'Internal server error',
-      code: err.code || 'INTERNAL_SERVER_ERROR'
+
+  let status = err.status || 500;
+  let message = err.message || 'Internal server error';
+  let code = err.code || 'INTERNAL_SERVER_ERROR';
+
+  // Handle Prisma Errors
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') {
+      status = 409;
+      message = 'Record already exists';
+      code = 'CONFLICT';
+    } else if (err.code === 'P2025') {
+      status = 404;
+      message = 'Record not found';
+      code = 'NOT_FOUND';
+    } else {
+      status = 400;
+      message = 'Database error';
+      code = 'DB_ERROR';
     }
+  }
+
+  res.status(status).json({
+    success: false,
+    error: { message, code }
   });
 });
 

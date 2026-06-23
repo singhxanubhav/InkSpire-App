@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../ui/Button';
@@ -13,6 +13,7 @@ interface WriterCardProps {
 
 export function WriterCard({ writer, onPress, onConnect, isConnecting, isPending }: WriterCardProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [avatarError, setAvatarError] = useState(false);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -28,7 +29,9 @@ export function WriterCard({ writer, onPress, onConnect, isConnecting, isPending
     }).start();
   };
 
-  const displayAvatar = writer.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${writer.id}`;
+  // Use PNG format from DiceBear - SVG is not supported by React Native's Image component
+  const fallbackAvatar = `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(writer.displayName || 'U')}&backgroundColor=6366f1&textColor=ffffff&fontSize=40`;
+  const displayAvatar = (!avatarError && writer.avatar) ? writer.avatar : fallbackAvatar;
 
   return (
     <Pressable
@@ -38,7 +41,11 @@ export function WriterCard({ writer, onPress, onConnect, isConnecting, isPending
     >
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.header}>
-          <Image source={{ uri: displayAvatar }} style={styles.avatar} />
+          <Image
+            source={{ uri: displayAvatar }}
+            style={styles.avatar}
+            onError={() => setAvatarError(true)}
+          />
           <View style={styles.headerInfo}>
             <Text style={styles.name} numberOfLines={1}>{writer.displayName}</Text>
             {writer.experienceLevel && (
