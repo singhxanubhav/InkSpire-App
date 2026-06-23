@@ -126,7 +126,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 16,
   },
   imageContainer: {
     position: 'relative',
