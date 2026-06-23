@@ -162,8 +162,9 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
   };
 
   return (
-    <Modal
-      visible={isVisible}
+    <>
+      <Modal
+        visible={isVisible}
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
@@ -242,7 +243,8 @@ export default function CommentThread({ isVisible, submissionId, onClose }: Comm
         setDeleteTargetId(null);
       }}
       onCancel={() => setDeleteTargetId(null)}
-    />
+      />
+    </>
   );
 }
 

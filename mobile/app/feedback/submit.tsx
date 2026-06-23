@@ -56,8 +56,9 @@ export default function SubmitRequestScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <>
+      <KeyboardAvoidingView 
+        style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
@@ -146,7 +147,8 @@ export default function SubmitRequestScreen() {
       message={toast.message}
       type={toast.type}
       onHide={() => setToast(prev => ({ ...prev, visible: false }))}
-    />
+      />
+    </>
   );
 }
 

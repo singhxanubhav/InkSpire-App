@@ -75,8 +75,9 @@ export default function GiveFeedbackScreen() {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <>
+      <KeyboardAvoidingView 
+        style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
@@ -171,7 +172,8 @@ export default function GiveFeedbackScreen() {
       message={toast.message}
       type={toast.type}
       onHide={() => setToast(prev => ({ ...prev, visible: false }))}
-    />
+      />
+    </>
   );
 }
 

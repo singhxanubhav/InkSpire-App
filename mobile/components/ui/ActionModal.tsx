@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { GestureHandlerRootView, PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -29,6 +30,7 @@ interface ActionModalProps {
 export function ActionModal({ visible, title, options, onClose }: ActionModalProps) {
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -92,19 +94,30 @@ export function ActionModal({ visible, title, options, onClose }: ActionModalPro
 
   if (!visible) return null;
 
+  // Bottom padding accounts for safe area (home indicator on iOS, gesture bar on Android)
+  // so the sheet content never sits behind the bottom navbar
+  const bottomPadding = Math.max(insets.bottom, 8) + 16;
+
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={animateClose}>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={animateClose}
+    >
       {/*
         GestureHandlerRootView MUST be inside Modal on mobile (Android/iOS),
         because Modal renders in a new React root, outside the app's GestureHandlerRootView.
+        statusBarTranslucent ensures the overlay covers the full screen on Android.
       */}
       <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-        {/* Backdrop */}
+        {/* Full-screen backdrop — covers everything including bottom navbar */}
         <TouchableWithoutFeedback onPress={animateClose}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} />
         </TouchableWithoutFeedback>
 
-        {/* Sheet */}
+        {/* Sheet anchored to very bottom of screen */}
         <Animated.View style={[styles.sheetWrapper, { transform: [{ translateY: slideAnim }] }]}>
           <PanGestureHandler
             onGestureEvent={onGestureEvent}
@@ -112,7 +125,7 @@ export function ActionModal({ visible, title, options, onClose }: ActionModalPro
             activeOffsetY={10}
             failOffsetY={-5}
           >
-            <Animated.View style={styles.container}>
+            <Animated.View style={[styles.container, { paddingBottom: bottomPadding }]}>
               <View style={styles.dragHandle} />
 
               {title && <Text style={styles.title}>{title}</Text>}
@@ -157,7 +170,7 @@ export function ActionModal({ visible, title, options, onClose }: ActionModalPro
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   sheetWrapper: {
     position: 'absolute',
@@ -170,7 +183,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingBottom: 40,
     paddingTop: 12,
   },
   dragHandle: {
