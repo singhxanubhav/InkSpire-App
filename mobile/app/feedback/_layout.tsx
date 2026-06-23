@@ -1,5 +1,7 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
+import { BackButton } from '../../components/ui/BackButton';
 
 export default function FeedbackLayout() {
   return (
@@ -14,6 +16,9 @@ export default function FeedbackLayout() {
         },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: '#f8fafc' }, // slate-50
+        headerLeft: ({ canGoBack }) => canGoBack ? (
+          <BackButton style={{ marginLeft: Platform.OS === 'ios' ? -15 : 0, marginRight: 10 }} />
+        ) : undefined,
       }}
     >
       <Stack.Screen 

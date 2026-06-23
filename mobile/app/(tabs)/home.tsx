@@ -140,7 +140,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View className="h-4 bg-slate-100 rounded-full w-full mb-6 overflow-hidden">
+            <View className="h-4 bg-slate-100 rounded-full w-full overflow-hidden">
               <LinearGradient
                 colors={['#3b82f6', '#8b5cf6']}
                 start={{ x: 0, y: 0 }}
@@ -148,17 +148,6 @@ export default function HomeScreen() {
                 style={{ width: '5%', height: '100%', borderRadius: 999 }}
               />
             </View>
-
-            <AnimatedPressable onPress={() => router.push('/progress')}>
-              <LinearGradient
-                colors={['#0f172a', '#1e293b']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-4 rounded-2xl items-center shadow-lg"
-              >
-                <Text className="text-white font-bold text-base tracking-wide">Log Words & View Stats</Text>
-              </LinearGradient>
-            </AnimatedPressable>
           </View>
         </Animated.View>
 
