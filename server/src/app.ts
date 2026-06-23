@@ -54,8 +54,8 @@ apiRouter.get('/health', (req, res) => {
 // Specific rate limiters
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { success: false, error: { message: 'Too many auth requests' } } });
 const matchesLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, message: { success: false, error: { message: 'Match request limit reached' } } });
-const feedbackLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 5, message: { success: false, error: { message: 'Daily feedback limit reached' } } });
-const promptsLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 3, message: { success: false, error: { message: 'Daily prompt submission limit reached' } } });
+const feedbackLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 100, message: { success: false, error: { message: 'Daily feedback limit reached' } } });
+const promptsLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 100, message: { success: false, error: { message: 'Daily prompt submission limit reached' } } });
 
 apiRouter.use('/auth', authLimiter, authRouter);
 apiRouter.use('/users', userRouter);

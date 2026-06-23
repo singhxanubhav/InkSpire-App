@@ -4,10 +4,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 export class FeedbackService {
   static async createRequest(userId: string, data: any) {
-    const wordCount = data.excerpt.trim() ? data.excerpt.trim().split(/\s+/).length : 0;
-    if (wordCount > 1000) {
-      throw new Error('Excerpt exceeds maximum word count of 1000 words.');
-    }
 
     return prisma.feedbackRequest.create({
       data: {
@@ -130,16 +126,7 @@ export class FeedbackService {
       throw new Error('Cannot review your own request');
     }
 
-    // Check minimum word counts
-    const overallWordCount = data.overallImpression.trim() ? data.overallImpression.trim().split(/\s+/).length : 0;
-    const detailedNotesWordCount = data.detailedNotes.trim() ? data.detailedNotes.trim().split(/\s+/).length : 0;
-    
-    if (overallWordCount < 50) {
-      throw new Error('Overall impression must be at least 50 words.');
-    }
-    if (detailedNotesWordCount < 100) {
-      throw new Error('Detailed notes must be at least 100 words.');
-    }
+    // Removed word count limits
 
     const existingResponse = await prisma.feedbackResponse.findUnique({
       where: {

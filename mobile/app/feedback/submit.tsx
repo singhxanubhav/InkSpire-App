@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -30,6 +30,9 @@ export default function SubmitRequestScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ['feedbackRequests'] });
       router.replace('/feedback'); // Go back to browse, ideally toast here
+    },
+    onError: (err: any) => {
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to submit request');
     }
   });
 
@@ -124,7 +127,10 @@ export default function SubmitRequestScreen() {
           onPress={handleSubmit}
         >
           {mutation.isPending ? (
-            <ActivityIndicator color="#fff" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.submitBtnText}>Submitting...</Text>
+            </View>
           ) : (
             <Text style={styles.submitBtnText}>Submit for Feedback</Text>
           )}
