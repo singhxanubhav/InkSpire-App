@@ -71,7 +71,17 @@ api.interceptors.response.use(
     // Handle Network Errors
     if (!error.response && error.message === 'Network Error') {
       console.error('No internet connection');
-      error.message = 'No internet connection';
+      error.message = 'Please check your internet connection and try again.';
+    }
+    
+    // Extract user-friendly error message from our backend
+    // Our backend sends: { success: false, error: { message: '...', code: '...' } }
+    if (error.response?.data?.error?.message) {
+      error.message = error.response.data.error.message;
+    } else if (error.response?.data?.message) {
+      error.message = error.response.data.message;
+    } else if (error.response?.status >= 500) {
+      error.message = 'Something went wrong on our end. Please try again later.';
     }
     
     return Promise.reject(error);
