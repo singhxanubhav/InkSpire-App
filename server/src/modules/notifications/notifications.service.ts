@@ -1,21 +1,60 @@
 import { PrismaClient, NotificationType } from '@prisma/client';
+import https from 'https';
 
 const prisma = new PrismaClient();
 
-// expo-server-sdk is ESM-only, so we must use a dynamic import() instead of
-// a top-level require(). We lazily load it on first use to avoid the
-// ERR_REQUIRE_ESM error when the compiled CJS bundle runs.
-let _expo: any = null;
-let _Expo: any = null;
+// ─── Lightweight Expo Push Helper (replaces expo-server-sdk) ─────────────────
+// expo-server-sdk v6+ is ESM-only and breaks CJS builds.
+// We call Expo's Push API directly via Node's built-in https module.
+// See: https://docs.expo.dev/push-notifications/sending-notifications/
+// ─────────────────────────────────────────────────────────────────────────────
 
-async function getExpo() {
-  if (!_expo) {
-    const mod = await import('expo-server-sdk');
-    _Expo = mod.Expo;
-    _expo = new _Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
-  }
-  return { expo: _expo, Expo: _Expo };
+function isExpoPushToken(token: string): boolean {
+  return /^ExponentPushToken\[.+\]$/.test(token) || /^[a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}$/i.test(token);
 }
+
+interface ExpoPushMessage {
+  to: string;
+  sound?: 'default' | null;
+  title?: string;
+  body?: string;
+  data?: Record<string, any>;
+}
+
+function sendExpoPushNotification(message: ExpoPushMessage): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify([message]);
+    const options: https.RequestOptions = {
+      hostname: 'exp.host',
+      path: '/--/api/v2/push/send',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          resolve(data);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
 
 export class NotificationsService {
   static async getNotifications(userId: string, page = 1, limit = 20) {
@@ -76,33 +115,30 @@ export class NotificationsService {
       }
     });
 
-    // 2. Try pushing to Expo (using dynamic import to avoid ESM/CJS conflict)
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { expoPushToken: true } });
-    
-    if (user?.expoPushToken) {
+    // 2. Try pushing to Expo via direct HTTPS call (no ESM dependency)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { expoPushToken: true }
+    });
+
+    if (user?.expoPushToken && isExpoPushToken(user.expoPushToken)) {
       try {
-        const { expo, Expo } = await getExpo();
+        const response = await sendExpoPushNotification({
+          to: user.expoPushToken,
+          sound: 'default',
+          title,
+          body,
+          data: { ...data, notificationId: notification.id, type },
+        });
 
-        if (Expo.isExpoPushToken(user.expoPushToken)) {
-          const message = {
-            to: user.expoPushToken,
-            sound: 'default',
-            title,
-            body,
-            data: { ...data, notificationId: notification.id, type }
-          };
-
-          const tickets = await expo.sendPushNotificationsAsync([message]);
-          
-          // Handle potential errors like DeviceNotRegistered
-          for (const ticket of tickets) {
-            if (ticket.status === 'error' && ticket.details?.error === 'DeviceNotRegistered') {
-              // Token is no longer valid, remove it
-              await prisma.user.update({
-                where: { id: userId },
-                data: { expoPushToken: null }
-              });
-            }
+        // Handle DeviceNotRegistered error
+        const tickets: any[] = response?.data || [];
+        for (const ticket of tickets) {
+          if (ticket?.status === 'error' && ticket?.details?.error === 'DeviceNotRegistered') {
+            await prisma.user.update({
+              where: { id: userId },
+              data: { expoPushToken: null }
+            });
           }
         }
       } catch (error) {
