@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@types/hammerjs": "^2.0.46",
+    "@types/node": "^26.0.1",
     "@types/react": "~19.1.17",
     "@types/react-test-renderer": "^19.1.0",
     "typescript": "~5.9.3"
