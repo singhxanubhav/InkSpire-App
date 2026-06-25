@@ -1,9 +1,31 @@
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../components/ui/Button';
+import { useEffect } from 'react';
+import { useAuthStore, initAuth } from '../store/authStore';
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    // Check local storage for tokens when app launches
+    initAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/(tabs)/home');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#8b5cf6" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
