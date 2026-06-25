@@ -4,9 +4,11 @@ import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
 const getBaseUrl = () => {
-  if (!__DEV__) return 'https://api.inkspire.com/api';
-  // Use env variable if provided (crucial for physical devices)
+  // Use env variable if provided (works in both dev and prod if EXPO_PUBLIC_ prefix is used)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  
+  if (!__DEV__) return 'https://inkspire-app-production.up.railway.app/api';
+  
   // Use 10.0.2.2 for Android emulator, localhost for iOS simulator/Web
   return Platform.OS === 'android' ? 'http://10.0.2.2:8000/api' : 'http://localhost:8000/api';
 };
