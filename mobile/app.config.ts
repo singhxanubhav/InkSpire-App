@@ -42,12 +42,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "WRITE_EXTERNAL_STORAGE"
     ]
   },
-  updates: {
-    url: "https://u.expo.dev/916f6f37-9624-41d6-89e7-ff6ebcbe13e4"
-  },
-  runtimeVersion: {
-    policy: "appVersion"
-  },
   web: {
     favicon: './assets/favicon.png'
   },
