@@ -104,7 +104,7 @@ export default function IdeaWorkspace({ matchId, partner }: IdeaWorkspaceProps) 
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Search Bar */}
@@ -113,6 +113,7 @@ export default function IdeaWorkspace({ matchId, partner }: IdeaWorkspaceProps) 
         <TextInput
           style={styles.searchInput}
           placeholder="Search ideas, characters, tags..."
+          placeholderTextColor="#9ca3af"
           value={search}
           onChangeText={setSearch}
         />

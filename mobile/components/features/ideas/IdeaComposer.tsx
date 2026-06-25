@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSocket } from '../../../hooks/useSocket';
@@ -15,6 +15,7 @@ export default function IdeaComposer({ matchId, onSend }: IdeaComposerProps) {
   const [type, setType] = useState('OTHER');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const inputRef = useRef<TextInput>(null);
   const { emitTyping } = useSocket('/match');
 
   const handleTextChange = (text: string) => {
@@ -54,6 +55,7 @@ export default function IdeaComposer({ matchId, onSend }: IdeaComposerProps) {
     setTagInput('');
     setType('OTHER');
     emitTyping(matchId, false);
+    inputRef.current?.clear();
     Keyboard.dismiss();
   };
 
@@ -79,8 +81,10 @@ export default function IdeaComposer({ matchId, onSend }: IdeaComposerProps) {
       {/* Input Area */}
       <View style={styles.inputArea}>
         <TextInput
+          ref={inputRef}
           style={styles.textInput}
           placeholder="Share an idea..."
+          placeholderTextColor="#9ca3af"
           multiline
           maxLength={1000}
           value={content}
@@ -100,6 +104,7 @@ export default function IdeaComposer({ matchId, onSend }: IdeaComposerProps) {
         <TextInput
           style={styles.tagInput}
           placeholder="Add tags (comma to add)"
+          placeholderTextColor="#9ca3af"
           value={tagInput}
           onChangeText={text => {
             if (text.endsWith(',') || text.endsWith(' ')) {
@@ -178,6 +183,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     minHeight: 40,
     fontSize: 15,
+    color: '#111827',
   },
   sendButton: {
     width: 44,
@@ -203,6 +209,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 12,
     fontSize: 13,
+    color: '#111827',
   },
   tagsList: {
     flex: 1,
