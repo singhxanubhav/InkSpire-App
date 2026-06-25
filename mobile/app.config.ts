@@ -55,14 +55,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     [
-      'expo-font',
-      {
-        fonts: [
-          './assets/fonts/SpaceMono-Regular.ttf'
-        ]
-      }
-    ],
-    [
       'expo-notifications',
       {
         icon: './assets/icon.png',
